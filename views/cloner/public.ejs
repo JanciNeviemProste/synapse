@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web na mieru | Synapse</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header with gradient -->
+  <div class="bg-gradient-to-br from-indigo-600 via-purple-700 to-indigo-900 text-white">
+    <div class="max-w-3xl mx-auto px-4 py-12 text-center">
+      <div class="flex items-center justify-center gap-2 mb-4">
+        <i data-lucide="zap" class="w-8 h-8"></i>
+        <span class="text-2xl font-bold">Synapse</span>
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold mb-3">Profesionalny web na mieru</h1>
+      <p class="text-indigo-200 text-lg max-w-xl mx-auto">
+        Vyberte si vzorovy web, ktory sa vam paci, a my vytvorime podobny
+        dizajn presne pre vasu firmu. Rychlo, moderne, profesionalne.
+      </p>
+    </div>
+  </div>
+
+  <div class="max-w-3xl mx-auto px-4 -mt-6">
+
+    <!-- Form Card -->
+    <div id="clone-form-section" class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 mb-8">
+      <form id="clone-form" class="space-y-5">
+        <% if (typeof ref !== 'undefined' && ref) { %>
+          <input type="hidden" id="clone-ref" name="ref" value="<%= ref %>">
+        <% } %>
+
+        <div>
+          <label for="source-url" class="block text-sm font-medium text-gray-700 mb-1">
+            <i data-lucide="globe" class="w-4 h-4 inline mr-1"></i>
+            URL vzoroveho webu *
+          </label>
+          <input
+            type="url"
+            id="source-url"
+            name="sourceUrl"
+            required
+            class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+            placeholder="https://www.vzorovy-web.sk"
+          >
+          <p class="text-xs text-gray-400 mt-1">Zadajte URL stranky, ktora sa vam paci a chcete podobny dizajn</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="business-field" class="block text-sm font-medium text-gray-700 mb-1">
+              <i data-lucide="briefcase" class="w-4 h-4 inline mr-1"></i>
+              Oblast podnikania *
+            </label>
+            <input
+              type="text"
+              id="business-field"
+              name="businessField"
+              required
+              class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+              placeholder="napr. Fitnes studio, Restauracia..."
+            >
+          </div>
+          <div>
+            <label for="business-name" class="block text-sm font-medium text-gray-700 mb-1">
+              <i data-lucide="building" class="w-4 h-4 inline mr-1"></i>
+              Nazov firmy *
+            </label>
+            <input
+              type="text"
+              id="business-name"
+              name="businessName"
+              required
+              class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+              placeholder="napr. FitLife s.r.o."
+            >
+          </div>
+        </div>
+
+        <div>
+          <label for="client-email" class="block text-sm font-medium text-gray-700 mb-1">
+            <i data-lucide="mail" class="w-4 h-4 inline mr-1"></i>
+            Email *
+          </label>
+          <input
+            type="email"
+            id="client-email"
+            name="clientEmail"
+            required
+            class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+            placeholder="vas@email.sk"
+          >
+        </div>
+
+        <div>
+          <label for="client-name" class="block text-sm font-medium text-gray-700 mb-1">
+            <i data-lucide="user" class="w-4 h-4 inline mr-1"></i>
+            Vase meno *
+          </label>
+          <input
+            type="text"
+            id="client-name"
+            name="clientName"
+            required
+            class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+            placeholder="Jan Novak"
+          >
+        </div>
+
+        <div>
+          <label for="business-info" class="block text-sm font-medium text-gray-700 mb-1">
+            <i data-lucide="list" class="w-4 h-4 inline mr-1"></i>
+            Sluzby / Produkty *
+          </label>
+          <textarea
+            id="business-info"
+            name="businessInfo"
+            required
+            rows="3"
+            class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none resize-y"
+            placeholder="Ake sluzby alebo produkty ponukate? Napisne hlavne body."
+          ></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="client-phone" class="block text-sm font-medium text-gray-700 mb-1">
+              <i data-lucide="phone" class="w-4 h-4 inline mr-1"></i>
+              Telefon <span class="text-gray-400">(volitelne)</span>
+            </label>
+            <input
+              type="tel"
+              id="client-phone"
+              name="clientPhone"
+              class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+              placeholder="+421 9XX XXX XXX"
+            >
+          </div>
+          <div>
+            <label for="additional-info" class="block text-sm font-medium text-gray-700 mb-1">
+              <i data-lucide="info" class="w-4 h-4 inline mr-1"></i>
+              Dalsie info <span class="text-gray-400">(volitelne)</span>
+            </label>
+            <input
+              type="text"
+              id="additional-info"
+              name="additionalInfo"
+              class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+              placeholder="Farebna paleta, specificke poziadavky..."
+            >
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          id="submit-btn"
+          class="w-full py-3 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-200 focus:outline-none flex items-center justify-center gap-2"
+        >
+          <i data-lucide="send" class="w-4 h-4"></i>
+          Odoslat poziadavku
+        </button>
+      </form>
+    </div>
+
+    <!-- Success Message (hidden by default) -->
+    <div id="clone-success" class="bg-white rounded-2xl shadow-lg border border-green-100 p-8 mb-8 text-center hidden">
+      <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+        <i data-lucide="check" class="w-8 h-8 text-green-600"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">Poziadavka prijata</h2>
+      <p class="text-gray-600 mb-4">
+        Dakujeme za vasu poziadavku. Nas system zacne pracovat na vasej stranke
+        a do niekolkych minut vam posieme preview na email.
+      </p>
+      <p class="text-sm text-gray-500">
+        Medzitym si mozete <a href="/booking/public" class="text-indigo-600 hover:text-indigo-800 font-medium">rezervovat bezplatnu konzultaciu</a>.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center py-8 text-xs text-gray-400">
+      Synapse System &mdash; Profesionalne webove riesenia
+    </div>
+  </div>
+
+<!-- Tracking script -->
+<script>
+(function() {
+  const ref = '<%= typeof ref !== "undefined" && ref ? ref : "" %>';
+  if (!ref) return;
+
+  function trackEvent(event, metadata) {
+    fetch('/api/tracking/event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref: ref, event: event, metadata: metadata || {} }),
+    }).catch(function() {});
+  }
+
+  // Track page view
+  trackEvent('form_page_viewed');
+
+  // Track form interactions
+  let formStarted = false;
+  document.getElementById('clone-form').addEventListener('focusin', function() {
+    if (!formStarted) {
+      formStarted = true;
+      trackEvent('form_started');
+    }
+  });
+})();
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  lucide.createIcons();
+
+  document.getElementById('clone-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Spracovavam...';
+    lucide.createIcons();
+
+    try {
+      const body = {
+        sourceUrl: document.getElementById('source-url').value,
+        businessField: document.getElementById('business-field').value,
+        businessName: document.getElementById('business-name').value,
+        clientEmail: document.getElementById('client-email').value,
+        clientName: document.getElementById('client-name').value,
+        businessInfo: document.getElementById('business-info').value,
+        clientPhone: document.getElementById('client-phone').value || undefined,
+        additionalInfo: document.getElementById('additional-info').value || undefined,
+      };
+
+      const refInput = document.getElementById('clone-ref');
+      if (refInput) {
+        body.trackingRef = refInput.value;
+      }
+
+      const res = await fetch('/api/cloner', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        document.getElementById('clone-form-section').classList.add('hidden');
+        document.getElementById('clone-success').classList.remove('hidden');
+        lucide.createIcons();
+
+        // Track conversion
+        const ref = '<%= typeof ref !== "undefined" && ref ? ref : "" %>';
+        if (ref) {
+          fetch('/api/tracking/event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ref: ref, event: 'form_completed' }),
+          }).catch(function() {});
+        }
+      } else {
+        throw new Error('Clone request failed');
+      }
+    } catch (err) {
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="send" class="w-4 h-4"></i> Odoslat poziadavku';
+      lucide.createIcons();
+      alert('Nepodarilo sa odoslat poziadavku. Skuste to prosim znova.');
+    }
+  });
+});
+</script>
+
+</body>
+</html>

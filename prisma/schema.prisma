@@ -1,0 +1,246 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== LEADS ====================
+
+model Lead {
+  id              String     @id @default(uuid())
+  authorName      String
+  profileUrl      String?
+  postUrl         String?
+  messengerUrl    String?
+  groupName       String?
+  postSummary     String     @db.Text
+  publicComment   String?    @db.Text
+  privateMessage  String?    @db.Text
+  source          String     @default("facebook")
+  category        String?
+  confidence      Float?
+
+  // Research
+  researchSummary   String?    @db.Text
+  trustScore        Int?       @default(0)
+  linkedinUrl       String?
+  companyName       String?
+  companyRegNumber  String?
+  companyInfo       String?    @db.Text
+  companyRevenue    String?
+  companyFoundedYear Int?
+  clientWebsite     String?
+  socialProfiles    String?    @db.Text
+
+  // Web analysis
+  webAnalysis       String?    @db.Text
+  priceEstimate     String?
+
+  // Tracking
+  heatScore         Int        @default(10)
+  linkOpened        Boolean    @default(false)
+  linkOpenedAt      DateTime?
+  formStarted       Boolean    @default(false)
+  formCompleted     Boolean    @default(false)
+  previewGenerated  Boolean    @default(false)
+  previewViews      Int        @default(0)
+  previewTotalTime  Int        @default(0)
+  lastPreviewViewAt DateTime?
+
+  // AI Learning
+  messageVariant    String?
+  responseType      String?
+
+  // Status
+  status            LeadStatus @default(NEW)
+  contactedAt       DateTime?
+  reminderSentAt    DateTime?
+  followUpSentAt    DateTime?
+  isBlacklisted     Boolean    @default(false)
+
+  emailMessageId  String?    @unique
+  rawEmailSnippet String?    @db.Text
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  notes           Note[]
+  activities      LeadActivity[]
+
+  @@index([status])
+  @@index([status, createdAt])
+  @@index([createdAt])
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+}
+
+model LeadActivity {
+  id        String   @id @default(uuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  event     String
+  metadata  String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+}
+
+model Blacklist {
+  id        String   @id @default(uuid())
+  name      String
+  profileUrl String?
+  reason    String?
+  createdAt DateTime @default(now())
+}
+
+model MessagePerformance {
+  id             String   @id @default(uuid())
+  leadId         String
+  variant        String
+  messageType    String
+  toneStyle      String?
+  phraseUsed     String?  @db.Text
+  linkType       String?
+  resultAction   String?
+  convertedToCall Boolean @default(false)
+  convertedToSale Boolean @default(false)
+  saleAmount      Float?
+  createdAt      DateTime @default(now())
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  REPLIED
+  QUALIFIED
+  CONVERTED
+  REJECTED
+}
+
+// ==================== BOOKING ====================
+
+model Booking {
+  id              String        @id @default(uuid())
+  clientName      String
+  clientEmail     String
+  clientPhone     String?
+  dateTime        DateTime
+  meetLink        String?
+  calendarEventId String?
+  leadId          String?
+  status          BookingStatus @default(PENDING)
+  notes           String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([dateTime])
+  @@index([status])
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+// ==================== AI CODER ====================
+
+model CoderTask {
+  id             String     @id @default(uuid())
+  source         String     @default("telegram")
+  telegramChatId String?
+  command        String     @default("code")
+  prompt         String     @db.Text
+  response       String?    @db.Text
+  generatedFiles String?    @db.Text
+  repoUrl        String?
+  deployUrl      String?
+  status         TaskStatus @default(PENDING)
+  duration       Int?
+  createdAt      DateTime   @default(now())
+  completedAt    DateTime?
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum TaskStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// ==================== FIGMA PIPELINE ====================
+
+model DesignTask {
+  id             String           @id @default(uuid())
+  figmaUrl       String
+  figmaFileKey   String
+  figmaNodeIds   String?
+  fileName       String?
+  submittedBy    String           @default("telegram")
+  status         DesignTaskStatus @default(PENDING)
+  generatedCode  String?          @db.Text
+  outputPath     String?
+  previewUrl     String?
+  errorMessage   String?          @db.Text
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  processedAt    DateTime?
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum DesignTaskStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// ==================== WEB CLONER ====================
+
+model CloneRequest {
+  id             String      @id @default(uuid())
+  sourceUrl      String
+  clientName     String
+  clientEmail    String
+  businessName   String
+  businessField  String
+  businessInfo   String      @db.Text
+  additionalInfo String?     @db.Text
+  clientPhone    String?
+  leadId         String?
+  trackingRef    String?     @unique
+  status         CloneStatus @default(PENDING)
+  previewUrl     String?
+  generatedHtml  String?     @db.Text
+  screenshotPath String?
+  errorMessage   String?     @db.Text
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  completedAt    DateTime?
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum CloneStatus {
+  PENDING
+  SCRAPING
+  GENERATING
+  COMPLETED
+  FAILED
+}

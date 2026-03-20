@@ -1,0 +1,147 @@
+<%- include('../layouts/header', { title: title, currentPath: currentPath }) %>
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Statistiky leadov</h1>
+    <p class="text-sm text-gray-500 mt-1">Prehad vykonnosti a konverzii</p>
+  </div>
+  <a href="/leads" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+    Kanban board
+  </a>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Celkovy pocet</span>
+      <i data-lucide="users" class="w-4 h-4 text-indigo-500"></i>
+    </div>
+    <p class="text-3xl font-bold text-gray-900"><%= typeof stats !== 'undefined' && stats.total !== undefined ? stats.total : '--' %></p>
+  </div>
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Konverzny pomer</span>
+      <i data-lucide="trending-up" class="w-4 h-4 text-green-500"></i>
+    </div>
+    <p class="text-3xl font-bold text-gray-900"><%= typeof stats !== 'undefined' && stats.conversionRate !== undefined ? stats.conversionRate : '--' %>%</p>
+  </div>
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Priemerna odozva</span>
+      <i data-lucide="clock" class="w-4 h-4 text-yellow-500"></i>
+    </div>
+    <p class="text-3xl font-bold text-gray-900"><%= typeof stats !== 'undefined' && stats.avgResponseTime !== undefined ? stats.avgResponseTime : '--' %></p>
+    <p class="text-xs text-gray-500 mt-1">hodin</p>
+  </div>
+</div>
+
+<!-- By Status -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <!-- Leads By Category Table -->
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Podla kategorie</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-gray-200">
+            <th class="text-left text-xs font-semibold text-gray-500 uppercase pb-3">Kategoria</th>
+            <th class="text-right text-xs font-semibold text-gray-500 uppercase pb-3">Pocet</th>
+            <th class="text-right text-xs font-semibold text-gray-500 uppercase pb-3">Podiel</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <% if (typeof stats !== 'undefined' && stats.byCategory && stats.byCategory.length > 0) { %>
+            <% stats.byCategory.forEach(function(cat) { %>
+              <tr>
+                <td class="py-3 text-sm text-gray-900"><%= cat.category || 'Bez kategorie' %></td>
+                <td class="py-3 text-sm text-gray-600 text-right"><%= cat.count %></td>
+                <td class="py-3 text-sm text-gray-600 text-right"><%= cat.percentage %>%</td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="3" class="py-6 text-center text-sm text-gray-400">Ziadne data</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Leads By Status -->
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Podla statusu</h2>
+    <div class="space-y-3">
+      <%
+        const statusColors = {
+          NEW: { bg: 'bg-blue-500', light: 'bg-blue-100', label: 'Novy' },
+          CONTACTED: { bg: 'bg-yellow-500', light: 'bg-yellow-100', label: 'Kontaktovany' },
+          REPLIED: { bg: 'bg-green-500', light: 'bg-green-100', label: 'Odpovedal' },
+          QUALIFIED: { bg: 'bg-purple-500', light: 'bg-purple-100', label: 'Kvalifikovany' },
+          CONVERTED: { bg: 'bg-emerald-500', light: 'bg-emerald-100', label: 'Konvertovany' },
+          REJECTED: { bg: 'bg-red-500', light: 'bg-red-100', label: 'Odmietnuty' },
+        };
+      %>
+      <% if (typeof stats !== 'undefined' && stats.byStatus && stats.byStatus.length > 0) { %>
+        <% stats.byStatus.forEach(function(s) { %>
+          <%
+            const sc = statusColors[s.status] || { bg: 'bg-gray-500', light: 'bg-gray-100', label: s.status };
+            const pct = stats.total > 0 ? Math.round((s.count / stats.total) * 100) : 0;
+          %>
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm text-gray-700"><%= sc.label %></span>
+              <span class="text-sm font-medium text-gray-900"><%= s.count %></span>
+            </div>
+            <div class="w-full <%= sc.light %> rounded-full h-2">
+              <div class="<%= sc.bg %> h-2 rounded-full" style="width: <%= pct %>%"></div>
+            </div>
+          </div>
+        <% }); %>
+      <% } else { %>
+        <p class="text-sm text-gray-400 text-center py-4">Ziadne data</p>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Bar Chart: Leads per day (last 7 days) -->
+<div class="bg-white rounded-xl border border-gray-200 p-6">
+  <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-6">Leady za poslednych 7 dni</h2>
+  <div class="flex items-end gap-3 h-48">
+    <%
+      const dailyData = (typeof stats !== 'undefined' && stats.daily) ? stats.daily : [];
+      const maxDaily = dailyData.reduce((max, d) => Math.max(max, d.count), 1);
+    %>
+    <% if (dailyData.length > 0) { %>
+      <% dailyData.forEach(function(day) { %>
+        <%
+          const barHeight = Math.max(8, Math.round((day.count / maxDaily) * 100));
+        %>
+        <div class="flex-1 flex flex-col items-center gap-2">
+          <span class="text-xs font-semibold text-gray-900"><%= day.count %></span>
+          <div class="w-full bg-indigo-500 rounded-t-md" style="height: <%= barHeight %>%"></div>
+          <span class="text-xs text-gray-500"><%= day.label %></span>
+        </div>
+      <% }); %>
+    <% } else { %>
+      <% for (let i = 6; i >= 0; i--) { %>
+        <%
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          const dayLabel = d.toLocaleDateString('sk-SK', { weekday: 'short' });
+        %>
+        <div class="flex-1 flex flex-col items-center gap-2">
+          <span class="text-xs font-semibold text-gray-400">0</span>
+          <div class="w-full bg-gray-200 rounded-t-md" style="height: 8%"></div>
+          <span class="text-xs text-gray-500"><%= dayLabel %></span>
+        </div>
+      <% } %>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../layouts/footer') %>

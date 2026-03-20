@@ -1,0 +1,186 @@
+<%- include('../layouts/header', { title: 'Cloner - Admin', currentPath: '/cloner' }) %>
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Web Cloner - Sprava</h1>
+    <p class="text-sm text-gray-500 mt-1">Prehad poziadaviek na klonovanie webovych stranok</p>
+  </div>
+  <a href="/cloner/public" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">
+    <i data-lucide="external-link" class="w-4 h-4"></i>
+    Verejny formular
+  </a>
+</div>
+
+<!-- Stats Summary -->
+<div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white rounded-xl border border-gray-200 p-4">
+    <div class="flex items-center justify-between">
+      <span class="text-xs font-semibold text-gray-500 uppercase">Celkom</span>
+      <i data-lucide="layers" class="w-4 h-4 text-gray-400"></i>
+    </div>
+    <p id="stat-total" class="text-2xl font-bold text-gray-900 mt-1">--</p>
+  </div>
+  <div class="bg-white rounded-xl border border-gray-200 p-4">
+    <div class="flex items-center justify-between">
+      <span class="text-xs font-semibold text-gray-500 uppercase">Cakajuce</span>
+      <i data-lucide="clock" class="w-4 h-4 text-yellow-500"></i>
+    </div>
+    <p id="stat-pending" class="text-2xl font-bold text-gray-900 mt-1">--</p>
+  </div>
+  <div class="bg-white rounded-xl border border-gray-200 p-4">
+    <div class="flex items-center justify-between">
+      <span class="text-xs font-semibold text-gray-500 uppercase">Dokoncene</span>
+      <i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i>
+    </div>
+    <p id="stat-completed" class="text-2xl font-bold text-gray-900 mt-1">--</p>
+  </div>
+  <div class="bg-white rounded-xl border border-gray-200 p-4">
+    <div class="flex items-center justify-between">
+      <span class="text-xs font-semibold text-gray-500 uppercase">Zlyhane</span>
+      <i data-lucide="alert-triangle" class="w-4 h-4 text-red-500"></i>
+    </div>
+    <p id="stat-failed" class="text-2xl font-bold text-gray-900 mt-1">--</p>
+  </div>
+</div>
+
+<!-- Requests Table -->
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead>
+        <tr class="bg-gray-50 border-b border-gray-200">
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Datum</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Klient</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Zdrojovy web</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Firma</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Trvanie</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Preview</th>
+        </tr>
+      </thead>
+      <tbody id="cloner-body" class="divide-y divide-gray-200">
+        <tr>
+          <td colspan="7" class="px-6 py-12 text-center text-sm text-gray-400">
+            <i data-lucide="loader" class="w-5 h-5 inline animate-spin mr-2"></i>
+            Nacitavam poziadavky...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const tbody = document.getElementById('cloner-body');
+
+  function statusBadge(status) {
+    const map = {
+      'PENDING': 'bg-gray-100 text-gray-700',
+      'SCRAPING': 'bg-blue-100 text-blue-800',
+      'GENERATING': 'bg-yellow-100 text-yellow-800',
+      'COMPLETED': 'bg-green-100 text-green-800',
+      'FAILED': 'bg-red-100 text-red-800',
+    };
+    const labels = {
+      'PENDING': 'Cakajuce',
+      'SCRAPING': 'Scrapovanie',
+      'GENERATING': 'Generovanie',
+      'COMPLETED': 'Dokoncene',
+      'FAILED': 'Zlyhane',
+    };
+    const cls = map[status] || 'bg-gray-100 text-gray-700';
+    const label = labels[status] || status;
+    return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ' + cls + '">' + label + '</span>';
+  }
+
+  async function loadRequests() {
+    try {
+      const res = await apiFetch('/api/cloner?limit=50');
+      if (!res.success || !res.data || res.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-12 text-center text-sm text-gray-400">' +
+          '<i data-lucide="copy" class="w-8 h-8 text-gray-300 mx-auto mb-3"></i>' +
+          '<p>Ziadne poziadavky na klonovanie</p></td></tr>';
+        lucide.createIcons();
+
+        document.getElementById('stat-total').textContent = '0';
+        document.getElementById('stat-pending').textContent = '0';
+        document.getElementById('stat-completed').textContent = '0';
+        document.getElementById('stat-failed').textContent = '0';
+        return;
+      }
+
+      const data = res.data;
+
+      // Update stats
+      document.getElementById('stat-total').textContent = data.length;
+      document.getElementById('stat-pending').textContent = data.filter(r => r.status === 'PENDING' || r.status === 'SCRAPING' || r.status === 'GENERATING').length;
+      document.getElementById('stat-completed').textContent = data.filter(r => r.status === 'COMPLETED').length;
+      document.getElementById('stat-failed').textContent = data.filter(r => r.status === 'FAILED').length;
+
+      tbody.innerHTML = data.map(req => {
+        const date = formatDate(req.createdAt);
+        const urlShort = req.sourceUrl.length > 35 ? req.sourceUrl.substring(0, 35) + '...' : req.sourceUrl;
+
+        let preview = '<span class="text-xs text-gray-400">--</span>';
+        if (req.status === 'COMPLETED' && req.generatedHtml && req.generatedHtml.length > 50) {
+          preview = '<a href="/cloner/preview/' + req.id + '" class="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 mr-2"><i data-lucide="eye" class="w-3.5 h-3.5"></i>Zobrazit</a>';
+        } else if (req.status === 'FAILED' || (req.status === 'COMPLETED' && (!req.generatedHtml || req.generatedHtml.length < 50))) {
+          preview = '<button onclick="retryClone(\'' + req.id + '\')" class="inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-800 font-medium mr-2"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Retry</button>';
+        }
+        preview += '<button onclick="deleteClone(\'' + req.id + '\')" class="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-800 font-medium"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Zmazat</button>';
+
+        var duration = '--';
+        if (req.completedAt && req.createdAt) {
+          var secs = Math.round((new Date(req.completedAt) - new Date(req.createdAt)) / 1000);
+          duration = secs + 's';
+        }
+
+        return '<tr class="hover:bg-gray-50">' +
+          '<td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">' + date + '</td>' +
+          '<td class="px-6 py-4 text-sm text-gray-900">' +
+            '<p class="font-medium">' + (req.clientName || '--') + '</p>' +
+            '<p class="text-xs text-gray-500">' + (req.clientEmail || '') + '</p>' +
+          '</td>' +
+          '<td class="px-6 py-4 text-sm"><a href="' + req.sourceUrl + '" target="_blank" class="text-indigo-600 hover:text-indigo-800">' + urlShort + '</a></td>' +
+          '<td class="px-6 py-4 text-sm text-gray-700">' + (req.businessName || '--') + '</td>' +
+          '<td class="px-6 py-4 whitespace-nowrap">' + statusBadge(req.status) + '</td>' +
+          '<td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">' + duration + '</td>' +
+          '<td class="px-6 py-4 whitespace-nowrap">' + preview + '</td>' +
+          '</tr>';
+      }).join('');
+
+      lucide.createIcons();
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-12 text-center text-sm text-gray-400">' +
+        '<i data-lucide="copy" class="w-8 h-8 text-gray-300 mx-auto mb-3"></i>' +
+        '<p>Poziadavky sa nacitaju z API</p></td></tr>';
+      lucide.createIcons();
+    }
+  }
+
+  window.retryClone = async function(id) {
+    try {
+      await apiFetch('/api/cloner/' + id + '/retry', { method: 'POST' });
+      loadRequests();
+    } catch (err) {
+      alert('Retry zlyhal: ' + err.message);
+    }
+  };
+
+  window.deleteClone = async function(id) {
+    if (!confirm('Naozaj chcete zmazat tento klon? Tato akcia je nevratna.')) return;
+    try {
+      await apiFetch('/api/cloner/' + id, { method: 'DELETE' });
+      loadRequests();
+    } catch (err) {
+      alert('Zmazanie zlyhalo: ' + err.message);
+    }
+  };
+
+  loadRequests();
+});
+</script>
+
+<%- include('../layouts/footer') %>

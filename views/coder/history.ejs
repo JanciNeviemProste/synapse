@@ -1,0 +1,117 @@
+<%- include('../layouts/header', { title: 'AI Coder - Historia', currentPath: '/coder' }) %>
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Historia uloh</h1>
+    <p class="text-sm text-gray-500 mt-1">Prehad vsetkych AI Coder uloh</p>
+  </div>
+  <a href="/coder" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">
+    <i data-lucide="plus" class="w-4 h-4"></i>
+    Nova uloha
+  </a>
+</div>
+
+<!-- Tasks Table -->
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead>
+        <tr class="bg-gray-50 border-b border-gray-200">
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Datum</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Prompt</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Trvanie</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Odkazy</th>
+        </tr>
+      </thead>
+      <tbody id="tasks-body" class="divide-y divide-gray-200">
+        <tr>
+          <td colspan="5" class="px-6 py-12 text-center text-sm text-gray-400">
+            <i data-lucide="loader" class="w-5 h-5 inline animate-spin mr-2"></i>
+            Nacitavam ulohy...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const tbody = document.getElementById('tasks-body');
+
+  function statusBadge(status) {
+    const map = {
+      'PENDING': 'bg-gray-100 text-gray-700',
+      'PROCESSING': 'bg-yellow-100 text-yellow-800',
+      'COMPLETED': 'bg-green-100 text-green-800',
+      'FAILED': 'bg-red-100 text-red-800',
+    };
+    const cls = map[status] || 'bg-gray-100 text-gray-700';
+    return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ' + cls + '">' + status + '</span>';
+  }
+
+  try {
+    const res = await apiFetch('/api/coder?limit=50');
+    if (!res.success || !res.data || res.data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-sm text-gray-400">Ziadne ulohy</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = res.data.map(task => {
+      const date = formatDate(task.createdAt);
+      const prompt = task.prompt.length > 60 ? task.prompt.substring(0, 60) + '...' : task.prompt;
+      const duration = task.duration ? task.duration + 's' : '--';
+
+      let links = '';
+      if (task.repoUrl) {
+        links += '<a href="' + task.repoUrl + '" target="_blank" class="inline-flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900 mr-3"><i data-lucide="github" class="w-3.5 h-3.5"></i>GitHub</a>';
+      }
+      if (task.deployUrl) {
+        links += '<a href="' + task.deployUrl + '" target="_blank" class="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800"><i data-lucide="external-link" class="w-3.5 h-3.5"></i>Vercel</a>';
+      }
+      if (task.status === 'COMPLETED' && task.response) {
+        links += '<a href="/coder/preview/' + task.id + '" target="_blank" class="inline-flex items-center gap-1 text-xs text-green-600 hover:text-green-800 font-medium mr-3"><i data-lucide="eye" class="w-3.5 h-3.5"></i>Zobrazit</a>';
+      }
+      if (task.status === 'FAILED' || (task.status === 'COMPLETED' && !task.response)) {
+        links = '<button onclick="retryTask(\'' + task.id + '\')" class="inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-800 font-medium mr-2"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Retry</button>';
+      }
+      links += '<button onclick="deleteTask(\'' + task.id + '\')" class="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-800 font-medium"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Zmazat</button>';
+
+      return '<tr class="hover:bg-gray-50">' +
+        '<td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">' + date + '</td>' +
+        '<td class="px-6 py-4 text-sm text-gray-900 max-w-xs">' + prompt + '</td>' +
+        '<td class="px-6 py-4 whitespace-nowrap">' + statusBadge(task.status) + '</td>' +
+        '<td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">' + duration + '</td>' +
+        '<td class="px-6 py-4 whitespace-nowrap">' + links + '</td>' +
+        '</tr>';
+    }).join('');
+
+    lucide.createIcons();
+  } catch (err) {
+    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-sm text-red-500">Chyba pri nacitani uloh</td></tr>';
+  }
+
+  window.retryTask = async function(id) {
+    try {
+      await apiFetch('/api/coder/' + id + '/retry', { method: 'POST' });
+      location.reload();
+    } catch (err) {
+      alert('Retry zlyhal: ' + err.message);
+    }
+  };
+
+  window.deleteTask = async function(id) {
+    if (!confirm('Naozaj chcete zmazat tuto ulohu? Tato akcia je nevratna.')) return;
+    try {
+      await apiFetch('/api/coder/' + id, { method: 'DELETE' });
+      location.reload();
+    } catch (err) {
+      alert('Zmazanie zlyhalo: ' + err.message);
+    }
+  };
+});
+</script>
+
+<%- include('../layouts/footer') %>

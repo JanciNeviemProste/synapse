@@ -1,0 +1,47 @@
+<%- include('../layouts/header', { title: 'Figma Preview', currentPath: '/figma' }) %>
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-4">
+  <div class="flex items-center gap-3">
+    <a href="/figma" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+      <i data-lucide="arrow-left" class="w-4 h-4"></i>
+      Spat
+    </a>
+    <h1 class="text-lg font-bold text-gray-900">Preview designu</h1>
+  </div>
+  <div class="flex items-center gap-2">
+    <% if (typeof task !== 'undefined' && task && task.figmaUrl) { %>
+      <a href="<%= task.figmaUrl %>" target="_blank" class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+        <i data-lucide="figma" class="w-3.5 h-3.5"></i>
+        Otvorit v Figme
+      </a>
+    <% } %>
+    <button onclick="toggleFullscreen()" class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+      <i data-lucide="maximize" class="w-3.5 h-3.5"></i>
+      Fullscreen
+    </button>
+  </div>
+</div>
+
+<!-- Preview iframe -->
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden" style="height: calc(100vh - 200px);">
+  <iframe
+    id="preview-frame"
+    src="/output/figma/<%= task.id %>/index.html"
+    class="w-full h-full border-0"
+    sandbox="allow-scripts allow-same-origin"
+  ></iframe>
+</div>
+
+<script>
+function toggleFullscreen() {
+  const iframe = document.getElementById('preview-frame');
+  if (iframe.requestFullscreen) {
+    iframe.requestFullscreen();
+  } else if (iframe.webkitRequestFullscreen) {
+    iframe.webkitRequestFullscreen();
+  }
+}
+</script>
+
+<%- include('../layouts/footer') %>

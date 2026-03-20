@@ -1,0 +1,299 @@
+<%- include('../layouts/header', { title: 'AI Coder', currentPath: '/coder' }) %>
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">AI Coder</h1>
+    <p class="text-sm text-gray-500 mt-1">Generovanie webovych stranok a aplikacii pomocou AI</p>
+  </div>
+  <a href="/coder/history" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+    <i data-lucide="history" class="w-4 h-4"></i>
+    Historia uloh
+  </a>
+</div>
+
+<!-- Task Form -->
+<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+  <h2 class="text-lg font-semibold text-gray-900 mb-4">Nova uloha</h2>
+  <form id="coder-form" class="space-y-4">
+    <div>
+      <label for="coder-prompt" class="block text-sm font-medium text-gray-700 mb-1">Popis projektu</label>
+      <textarea
+        id="coder-prompt"
+        name="prompt"
+        rows="5"
+        class="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none resize-y"
+        placeholder="Popis co chcete vytvorit, napr.: Landing page pre fitness centrum s dark temou, sekciami Hero, Sluzby, Cennik, Kontakt. Pouzit moderny design s animaciami."
+        required
+      ></textarea>
+    </div>
+
+    <div class="flex flex-col sm:flex-row gap-4">
+      <div class="flex-1">
+        <label for="coder-type" class="block text-sm font-medium text-gray-700 mb-1">Typ projektu</label>
+        <select
+          id="coder-type"
+          name="type"
+          class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none bg-white"
+        >
+          <option value="react-landing">React Landing Page</option>
+          <option value="html-css" selected>HTML/CSS Web</option>
+          <option value="nextjs-app">Next.js App</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+      <div class="flex items-end">
+        <button
+          type="submit"
+          id="coder-submit"
+          class="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+        >
+          <i data-lucide="play" class="w-4 h-4"></i>
+          Spustit generovanie
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Progress Section (hidden by default) -->
+<div id="coder-progress" class="bg-white rounded-xl border border-gray-200 p-6 mb-6 hidden">
+  <h2 class="text-lg font-semibold text-gray-900 mb-6">Priebeh generovania</h2>
+
+  <div class="space-y-4">
+    <!-- Step 1: Processing -->
+    <div id="step-processing" class="flex items-center gap-4">
+      <div class="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center text-gray-400" id="step-processing-icon">
+        <i data-lucide="cpu" class="w-4 h-4"></i>
+      </div>
+      <div class="flex-1">
+        <p class="text-sm font-medium text-gray-500">Spracovanie promptu</p>
+        <p class="text-xs text-gray-400">AI analyzuje poziadavky</p>
+      </div>
+      <div id="step-processing-status" class="text-xs text-gray-400">Caka</div>
+    </div>
+
+    <!-- Step 2: Building -->
+    <div id="step-building" class="flex items-center gap-4">
+      <div class="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center text-gray-400" id="step-building-icon">
+        <i data-lucide="hammer" class="w-4 h-4"></i>
+      </div>
+      <div class="flex-1">
+        <p class="text-sm font-medium text-gray-500">Generovanie kodu</p>
+        <p class="text-xs text-gray-400">Vytvara subory a strukturu</p>
+      </div>
+      <div id="step-building-status" class="text-xs text-gray-400">Caka</div>
+    </div>
+
+    <!-- Step 3: Deploying -->
+    <div id="step-deploying" class="flex items-center gap-4">
+      <div class="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center text-gray-400" id="step-deploying-icon">
+        <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+      </div>
+      <div class="flex-1">
+        <p class="text-sm font-medium text-gray-500">Nasadenie</p>
+        <p class="text-xs text-gray-400">Push na GitHub a deploy na Vercel</p>
+      </div>
+      <div id="step-deploying-status" class="text-xs text-gray-400">Caka</div>
+    </div>
+
+    <!-- Step 4: Done -->
+    <div id="step-done" class="flex items-center gap-4">
+      <div class="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center text-gray-400" id="step-done-icon">
+        <i data-lucide="check-circle" class="w-4 h-4"></i>
+      </div>
+      <div class="flex-1">
+        <p class="text-sm font-medium text-gray-500">Hotovo</p>
+        <p class="text-xs text-gray-400">Projekt je nasadeny a pripraveny</p>
+      </div>
+      <div id="step-done-status" class="text-xs text-gray-400">Caka</div>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="mt-6">
+    <div class="w-full bg-gray-200 rounded-full h-2">
+      <div id="progress-bar" class="bg-indigo-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Result Section (hidden by default) -->
+<div id="coder-result" class="bg-white rounded-xl border border-green-200 p-6 hidden">
+  <div class="flex items-center gap-3 mb-4">
+    <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+      <i data-lucide="check" class="w-5 h-5 text-green-600"></i>
+    </div>
+    <div>
+      <h2 class="text-lg font-semibold text-gray-900">Projekt je hotovy</h2>
+      <p id="result-duration" class="text-sm text-gray-500">Trvanie: --</p>
+    </div>
+  </div>
+  <div class="flex flex-col sm:flex-row gap-3">
+    <a id="result-github" href="#" target="_blank" class="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800">
+      <i data-lucide="github" class="w-4 h-4"></i>
+      GitHub Repository
+    </a>
+    <a id="result-vercel" href="#" target="_blank" class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
+      <i data-lucide="external-link" class="w-4 h-4"></i>
+      Vercel Deploy
+    </a>
+  </div>
+</div>
+
+<!-- Error Section (hidden by default) -->
+<div id="coder-error" class="bg-white rounded-xl border border-red-200 p-6 hidden">
+  <div class="flex items-center gap-3">
+    <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+      <i data-lucide="alert-triangle" class="w-5 h-5 text-red-600"></i>
+    </div>
+    <div>
+      <h2 class="text-lg font-semibold text-gray-900">Chyba generovania</h2>
+      <p id="error-message" class="text-sm text-red-600">Nieco sa pokazilo</p>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('coder-form');
+  const submitBtn = document.getElementById('coder-submit');
+  const progressSection = document.getElementById('coder-progress');
+  const resultSection = document.getElementById('coder-result');
+  const errorSection = document.getElementById('coder-error');
+
+  let pollingInterval = null;
+
+  function setStepActive(stepId) {
+    const icon = document.getElementById(stepId + '-icon');
+    const status = document.getElementById(stepId + '-status');
+    icon.classList.remove('border-gray-300', 'text-gray-400');
+    icon.classList.add('border-indigo-600', 'text-indigo-600');
+    status.textContent = 'Prebieha...';
+    status.classList.remove('text-gray-400');
+    status.classList.add('text-indigo-600', 'font-medium');
+  }
+
+  function setStepDone(stepId) {
+    const icon = document.getElementById(stepId + '-icon');
+    const status = document.getElementById(stepId + '-status');
+    icon.classList.remove('border-gray-300', 'text-gray-400', 'border-indigo-600', 'text-indigo-600');
+    icon.classList.add('border-green-500', 'text-green-500', 'bg-green-50');
+    status.textContent = 'Hotovo';
+    status.classList.remove('text-gray-400', 'text-indigo-600');
+    status.classList.add('text-green-600', 'font-medium');
+  }
+
+  function setStepFailed(stepId) {
+    const icon = document.getElementById(stepId + '-icon');
+    const status = document.getElementById(stepId + '-status');
+    icon.classList.remove('border-gray-300', 'text-gray-400', 'border-indigo-600', 'text-indigo-600');
+    icon.classList.add('border-red-500', 'text-red-500');
+    status.textContent = 'Zlyhalo';
+    status.classList.remove('text-gray-400', 'text-indigo-600');
+    status.classList.add('text-red-600', 'font-medium');
+  }
+
+  async function pollStatus(taskId) {
+    try {
+      const res = await apiFetch('/api/coder/' + taskId + '/status');
+      if (!res.success) return;
+
+      const task = res.data;
+
+      if (task.status === 'PROCESSING') {
+        setStepDone('step-processing');
+        setStepActive('step-building');
+        document.getElementById('progress-bar').style.width = '40%';
+      } else if (task.status === 'COMPLETED') {
+        setStepDone('step-processing');
+        setStepDone('step-building');
+        setStepDone('step-deploying');
+        setStepDone('step-done');
+        document.getElementById('progress-bar').style.width = '100%';
+
+        clearInterval(pollingInterval);
+        submitBtn.disabled = false;
+
+        if (task.duration) {
+          document.getElementById('result-duration').textContent = 'Trvanie: ' + task.duration + 's';
+        }
+        if (task.repoUrl) {
+          document.getElementById('result-github').href = task.repoUrl;
+        }
+        if (task.deployUrl) {
+          document.getElementById('result-vercel').href = task.deployUrl;
+        }
+
+        resultSection.classList.remove('hidden');
+        lucide.createIcons();
+      } else if (task.status === 'FAILED') {
+        setStepFailed('step-building');
+        document.getElementById('progress-bar').style.width = '40%';
+        document.getElementById('progress-bar').classList.remove('bg-indigo-600');
+        document.getElementById('progress-bar').classList.add('bg-red-500');
+
+        clearInterval(pollingInterval);
+        submitBtn.disabled = false;
+
+        document.getElementById('error-message').textContent = 'Generovanie zlyhalo. Skuste to znova s upravenym promptom.';
+        errorSection.classList.remove('hidden');
+        lucide.createIcons();
+      }
+    } catch (e) {
+      console.error('Polling error:', e);
+    }
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const prompt = document.getElementById('coder-prompt').value.trim();
+    const type = document.getElementById('coder-type').value;
+
+    if (!prompt) return;
+
+    submitBtn.disabled = true;
+    progressSection.classList.remove('hidden');
+    resultSection.classList.add('hidden');
+    errorSection.classList.add('hidden');
+
+    // Reset steps
+    ['step-processing', 'step-building', 'step-deploying', 'step-done'].forEach(id => {
+      const icon = document.getElementById(id + '-icon');
+      const status = document.getElementById(id + '-status');
+      icon.className = 'w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center text-gray-400';
+      status.textContent = 'Caka';
+      status.className = 'text-xs text-gray-400';
+    });
+
+    document.getElementById('progress-bar').style.width = '0%';
+    document.getElementById('progress-bar').classList.remove('bg-red-500');
+    document.getElementById('progress-bar').classList.add('bg-indigo-600');
+
+    setStepActive('step-processing');
+    document.getElementById('progress-bar').style.width = '15%';
+
+    try {
+      const res = await apiFetch('/api/coder', {
+        method: 'POST',
+        body: JSON.stringify({ prompt, type }),
+      });
+
+      if (res.success && res.data) {
+        document.getElementById('progress-bar').style.width = '25%';
+        pollingInterval = setInterval(() => pollStatus(res.data.id), 3000);
+      } else {
+        throw new Error('Failed to create task');
+      }
+    } catch (err) {
+      setStepFailed('step-processing');
+      submitBtn.disabled = false;
+      document.getElementById('error-message').textContent = 'Nepodarilo sa vytvorit ulohu. Skuste to znova.';
+      errorSection.classList.remove('hidden');
+      lucide.createIcons();
+    }
+  });
+});
+</script>
+
+<%- include('../layouts/footer') %>

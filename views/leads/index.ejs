@@ -1,0 +1,133 @@
+<%- include('../layouts/header', { title: title, currentPath: currentPath }) %>
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Leads</h1>
+    <p class="text-sm text-gray-500 mt-1">Kanban board pre spravu leadov</p>
+  </div>
+  <a href="/leads/stats" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+    Statistiky
+  </a>
+</div>
+
+<!-- Kanban Board -->
+<div class="flex gap-4 overflow-x-auto pb-4" id="kanban-board">
+  <%
+    const columns = [
+      { id: 'NEW', label: 'Novy', color: 'blue' },
+      { id: 'CONTACTED', label: 'Kontaktovany', color: 'yellow' },
+      { id: 'REPLIED', label: 'Odpovedal', color: 'green' },
+      { id: 'QUALIFIED', label: 'Kvalifikovany', color: 'purple' },
+      { id: 'CONVERTED', label: 'Konvertovany', color: 'emerald' },
+    ];
+  %>
+
+  <% columns.forEach(function(col) { %>
+    <div
+      class="kanban-column flex-shrink-0 w-72 bg-gray-100 rounded-xl p-3"
+      data-status="<%= col.id %>"
+      ondragover="event.preventDefault(); this.classList.add('bg-<%= col.color %>-50')"
+      ondragleave="this.classList.remove('bg-<%= col.color %>-50')"
+      ondrop="handleDrop(event, '<%= col.id %>'); this.classList.remove('bg-<%= col.color %>-50')"
+    >
+      <!-- Column Header -->
+      <div class="flex items-center justify-between mb-3 px-1">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-<%= col.color %>-500"></span>
+          <h3 class="text-sm font-semibold text-gray-700"><%= col.label %></h3>
+        </div>
+        <span class="text-xs font-medium text-gray-400 bg-white rounded-full px-2 py-0.5" id="count-<%= col.id %>">
+          <%= typeof leads !== 'undefined' ? leads.filter(l => l.status === col.id).length : 0 %>
+        </span>
+      </div>
+
+      <!-- Cards Container -->
+      <div class="space-y-2 min-h-[200px]" id="column-<%= col.id %>">
+        <% if (typeof leads !== 'undefined') { %>
+          <% leads.filter(l => l.status === col.id).forEach(function(lead) { %>
+            <div
+              class="kanban-card bg-white rounded-lg border border-gray-200 p-3 shadow-sm"
+              draggable="true"
+              data-id="<%= lead.id %>"
+              ondragstart="handleDragStart(event, '<%= lead.id %>')"
+              ondragend="this.classList.remove('dragging')"
+            >
+              <a href="/leads/<%= lead.id %>" class="block">
+                <div class="flex items-center justify-between mb-2">
+                  <p class="text-sm font-semibold text-gray-900 truncate flex-1"><%= lead.authorName %></p>
+                </div>
+
+                <div class="flex items-center gap-3 mb-2">
+                  <% if (lead.trustScore !== null && lead.trustScore !== undefined) { %>
+                    <span class="text-xs text-gray-500 flex items-center gap-1">
+                      <i data-lucide="shield" class="w-3 h-3"></i>
+                      <%= lead.trustScore %>%
+                    </span>
+                  <% } %>
+                  <span class="text-xs flex items-center gap-1 <%= lead.heatScore >= 70 ? 'text-red-500' : lead.heatScore >= 40 ? 'text-yellow-500' : 'text-blue-500' %>">
+                    <i data-lucide="flame" class="w-3 h-3"></i>
+                    <%= lead.heatScore %>
+                  </span>
+                </div>
+
+                <% if (lead.companyRevenue) { %>
+                  <p class="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                    <i data-lucide="banknote" class="w-3 h-3"></i>
+                    <%= lead.companyRevenue %>
+                  </p>
+                <% } %>
+
+                <% if (lead.category) { %>
+                  <span class="inline-block text-xs font-medium bg-gray-100 text-gray-600 rounded px-2 py-0.5"><%= lead.category %></span>
+                <% } %>
+              </a>
+            </div>
+          <% }); %>
+        <% } %>
+      </div>
+    </div>
+  <% }); %>
+</div>
+
+<script>
+let draggedId = null;
+
+function handleDragStart(event, id) {
+  draggedId = id;
+  event.target.classList.add('dragging');
+  event.dataTransfer.effectAllowed = 'move';
+}
+
+async function handleDrop(event, newStatus) {
+  event.preventDefault();
+  if (!draggedId) return;
+
+  const card = document.querySelector('[data-id="' + draggedId + '"]');
+  if (!card) return;
+
+  const targetColumn = document.getElementById('column-' + newStatus);
+  targetColumn.appendChild(card);
+
+  // Update counts
+  document.querySelectorAll('.kanban-column').forEach(col => {
+    const status = col.dataset.status;
+    const count = col.querySelectorAll('.kanban-card').length;
+    document.getElementById('count-' + status).textContent = count;
+  });
+
+  try {
+    await apiFetch('/api/leads/' + draggedId + '/status', {
+      method: 'PUT',
+      body: JSON.stringify({ status: newStatus }),
+    });
+  } catch (err) {
+    console.error('Failed to update lead status:', err);
+  }
+
+  draggedId = null;
+}
+</script>
+
+<%- include('../layouts/footer') %>

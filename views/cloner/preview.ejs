@@ -1,0 +1,97 @@
+<%- include('../layouts/header', { title: 'Clone Preview', currentPath: '/cloner' }) %>
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-4">
+  <div class="flex items-center gap-3">
+    <a href="/cloner/admin" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+      <i data-lucide="arrow-left" class="w-4 h-4"></i>
+      Spat
+    </a>
+    <h1 class="text-lg font-bold text-gray-900">Preview klonovaneho webu</h1>
+  </div>
+  <div class="flex items-center gap-2">
+    <% if (typeof clone !== 'undefined' && clone) { %>
+      <span class="text-xs text-gray-500">
+        Klient: <span class="font-medium text-gray-700"><%= clone.clientName || '--' %></span>
+      </span>
+      <span class="text-gray-300">|</span>
+      <a href="<%= clone.sourceUrl %>" target="_blank" class="inline-flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900">
+        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+        Zdrojovy web
+      </a>
+    <% } %>
+    <button onclick="toggleFullscreen()" class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+      <i data-lucide="maximize" class="w-3.5 h-3.5"></i>
+      Fullscreen
+    </button>
+  </div>
+</div>
+
+<!-- Device Toggle -->
+<div class="flex items-center gap-2 mb-4">
+  <button onclick="setDevice('desktop')" id="btn-desktop" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-indigo-50 text-indigo-700 rounded-lg">
+    <i data-lucide="monitor" class="w-3.5 h-3.5"></i>
+    Desktop
+  </button>
+  <button onclick="setDevice('tablet')" id="btn-tablet" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+    <i data-lucide="tablet" class="w-3.5 h-3.5"></i>
+    Tablet
+  </button>
+  <button onclick="setDevice('mobile')" id="btn-mobile" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+    <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+    Mobil
+  </button>
+</div>
+
+<!-- Preview iframe -->
+<div class="flex justify-center">
+  <div id="preview-container" class="bg-white rounded-xl border border-gray-200 overflow-hidden transition-all duration-300" style="width: 100%; height: calc(100vh - 260px);">
+    <iframe
+      id="preview-frame"
+      src="<%= typeof previewUrl !== 'undefined' ? previewUrl : '/output/cloner/' + (typeof cloneId !== 'undefined' ? cloneId : '') + '/index.html' %>"
+      class="w-full h-full border-0"
+      sandbox="allow-scripts allow-same-origin"
+    ></iframe>
+  </div>
+</div>
+
+<script>
+function toggleFullscreen() {
+  const iframe = document.getElementById('preview-frame');
+  if (iframe.requestFullscreen) {
+    iframe.requestFullscreen();
+  } else if (iframe.webkitRequestFullscreen) {
+    iframe.webkitRequestFullscreen();
+  }
+}
+
+function setDevice(device) {
+  const container = document.getElementById('preview-container');
+  const buttons = { desktop: 'btn-desktop', tablet: 'btn-tablet', mobile: 'btn-mobile' };
+
+  // Reset button styles
+  Object.values(buttons).forEach(id => {
+    const btn = document.getElementById(id);
+    btn.className = 'inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50';
+  });
+
+  // Activate selected button
+  const activeBtn = document.getElementById(buttons[device]);
+  activeBtn.className = 'inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-indigo-50 text-indigo-700 rounded-lg';
+
+  // Set container width
+  switch (device) {
+    case 'desktop':
+      container.style.width = '100%';
+      break;
+    case 'tablet':
+      container.style.width = '768px';
+      break;
+    case 'mobile':
+      container.style.width = '375px';
+      break;
+  }
+}
+</script>
+
+<%- include('../layouts/footer') %>

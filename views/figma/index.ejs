@@ -1,0 +1,181 @@
+<%- include('../layouts/header', { title: 'Figma Pipeline', currentPath: '/figma' }) %>
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Figma Pipeline</h1>
+    <p class="text-sm text-gray-500 mt-1">Konverzia Figma designov na HTML/CSS</p>
+  </div>
+</div>
+
+<!-- Submit Form -->
+<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+  <h2 class="text-lg font-semibold text-gray-900 mb-4">Novy design task</h2>
+  <form id="figma-form" class="flex flex-col sm:flex-row gap-3">
+    <div class="flex-1">
+      <label for="figma-url" class="sr-only">Figma URL</label>
+      <input
+        type="url"
+        id="figma-url"
+        name="figmaUrl"
+        required
+        class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+        placeholder="https://www.figma.com/file/... alebo https://www.figma.com/design/..."
+      >
+    </div>
+    <button
+      type="submit"
+      id="figma-submit"
+      class="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-200 focus:outline-none whitespace-nowrap"
+    >
+      <i data-lucide="upload" class="w-4 h-4"></i>
+      Odoslat na spracovanie
+    </button>
+  </form>
+</div>
+
+<!-- Tasks Table -->
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <div class="px-6 py-4 border-b border-gray-200">
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Design tasks</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead>
+        <tr class="bg-gray-50 border-b border-gray-200">
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Datum</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Figma URL</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Trvanie</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Akcie</th>
+        </tr>
+      </thead>
+      <tbody id="figma-tasks-body" class="divide-y divide-gray-200">
+        <tr>
+          <td colspan="5" class="px-6 py-12 text-center text-sm text-gray-400">
+            <i data-lucide="loader" class="w-5 h-5 inline animate-spin mr-2"></i>
+            Nacitavam design tasks...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const tbody = document.getElementById('figma-tasks-body');
+
+  function statusBadge(status) {
+    const map = {
+      'PENDING': 'bg-gray-100 text-gray-700',
+      'PROCESSING': 'bg-yellow-100 text-yellow-800',
+      'COMPLETED': 'bg-green-100 text-green-800',
+      'FAILED': 'bg-red-100 text-red-800',
+    };
+    const cls = map[status] || 'bg-gray-100 text-gray-700';
+    return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ' + cls + '">' + status + '</span>';
+  }
+
+  async function loadTasks() {
+    try {
+      const res = await apiFetch('/api/figma?limit=50');
+      if (!res.success || !res.data || res.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-sm text-gray-400">' +
+          '<i data-lucide="figma" class="w-8 h-8 text-gray-300 mx-auto mb-3"></i>' +
+          '<p>Ziadne design tasks</p></td></tr>';
+        lucide.createIcons();
+        return;
+      }
+
+      tbody.innerHTML = res.data.map(task => {
+        const date = formatDate(task.createdAt);
+        const urlShort = task.figmaUrl.length > 50 ? task.figmaUrl.substring(0, 50) + '...' : task.figmaUrl;
+        var duration = '--';
+        if (task.processedAt && task.createdAt) {
+          var secs = Math.round((new Date(task.processedAt) - new Date(task.createdAt)) / 1000);
+          duration = secs + 's';
+        }
+
+        var actions = '';
+        if (task.status === 'COMPLETED' && task.previewUrl) {
+          actions = '<a href="/figma/preview/' + task.id + '" class="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 mr-2"><i data-lucide="eye" class="w-3.5 h-3.5"></i>Zobrazit</a>';
+        } else if (task.status === 'FAILED') {
+          actions = '<button onclick="retryFigma(\'' + task.id + '\')" class="inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-800 font-medium mr-2"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Retry</button>';
+        }
+        actions += '<button onclick="deleteFigma(\'' + task.id + '\')" class="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-800 font-medium"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Zmazat</button>';
+
+        return '<tr class="hover:bg-gray-50">' +
+          '<td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">' + date + '</td>' +
+          '<td class="px-6 py-4 text-sm text-gray-900 max-w-xs"><a href="' + task.figmaUrl + '" target="_blank" class="text-indigo-600 hover:text-indigo-800">' + urlShort + '</a></td>' +
+          '<td class="px-6 py-4 whitespace-nowrap">' + statusBadge(task.status) + '</td>' +
+          '<td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">' + duration + '</td>' +
+          '<td class="px-6 py-4 whitespace-nowrap">' + actions + '</td>' +
+          '</tr>';
+      }).join('');
+
+      lucide.createIcons();
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-sm text-gray-400">' +
+        '<i data-lucide="figma" class="w-8 h-8 text-gray-300 mx-auto mb-3"></i>' +
+        '<p>Design tasks sa nacitaju z API</p></td></tr>';
+      lucide.createIcons();
+    }
+  }
+
+  // Submit form
+  document.getElementById('figma-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const url = document.getElementById('figma-url').value.trim();
+    if (!url) return;
+
+    const submitBtn = document.getElementById('figma-submit');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Spracovavam...';
+    lucide.createIcons();
+
+    try {
+      const res = await apiFetch('/api/figma', {
+        method: 'POST',
+        body: JSON.stringify({ figmaUrl: url }),
+      });
+
+      if (res.success) {
+        document.getElementById('figma-url').value = '';
+        loadTasks();
+      } else {
+        alert('Nepodarilo sa odoslat task. Skontrolujte URL.');
+      }
+    } catch (err) {
+      alert('Chyba pri odosielani. Skuste to znova.');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i data-lucide="upload" class="w-4 h-4"></i> Odoslat na spracovanie';
+      lucide.createIcons();
+    }
+  });
+
+  window.retryFigma = async function(id) {
+    try {
+      await apiFetch('/api/figma/' + id + '/retry', { method: 'POST' });
+      loadTasks();
+    } catch (err) {
+      alert('Retry zlyhal: ' + err.message);
+    }
+  };
+
+  window.deleteFigma = async function(id) {
+    if (!confirm('Naozaj chcete zmazat tento design task? Tato akcia je nevratna.')) return;
+    try {
+      await apiFetch('/api/figma/' + id, { method: 'DELETE' });
+      loadTasks();
+    } catch (err) {
+      alert('Zmazanie zlyhalo: ' + err.message);
+    }
+  };
+
+  loadTasks();
+});
+</script>
+
+<%- include('../layouts/footer') %>

@@ -1,0 +1,334 @@
+<%- include('../layouts/header', { title: title, currentPath: currentPath }) %>
+
+<% if (typeof lead !== 'undefined' && lead) { %>
+
+<!-- Back Link + Header -->
+<div class="mb-6">
+  <a href="/leads" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4">
+    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+    Spat na board
+  </a>
+
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div class="flex items-center gap-4">
+      <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
+        <span class="text-lg font-bold text-indigo-600"><%= lead.authorName.charAt(0).toUpperCase() %></span>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900"><%= lead.authorName %></h1>
+        <div class="flex items-center gap-3 mt-1">
+          <%
+            const statusMap = {
+              NEW: { label: 'Novy', cls: 'badge-new' },
+              CONTACTED: { label: 'Kontaktovany', cls: 'badge-contacted' },
+              REPLIED: { label: 'Odpovedal', cls: 'badge-replied' },
+              QUALIFIED: { label: 'Kvalifikovany', cls: 'badge-qualified' },
+              CONVERTED: { label: 'Konvertovany', cls: 'badge-converted' },
+              REJECTED: { label: 'Odmietnuty', cls: 'badge-rejected' },
+            };
+            const statusInfo = statusMap[lead.status] || { label: lead.status, cls: 'badge-new' };
+          %>
+          <span class="badge <%= statusInfo.cls %>"><%= statusInfo.label %></span>
+          <% if (lead.trustScore !== null && lead.trustScore !== undefined) { %>
+            <span class="text-sm text-gray-500 flex items-center gap-1">
+              <i data-lucide="shield" class="w-4 h-4"></i>
+              Trust: <%= lead.trustScore %>%
+            </span>
+          <% } %>
+          <span class="text-sm flex items-center gap-1 <%= lead.heatScore >= 70 ? 'text-red-500' : lead.heatScore >= 40 ? 'text-yellow-500' : 'text-blue-500' %>">
+            <i data-lucide="flame" class="w-4 h-4"></i>
+            Heat: <%= lead.heatScore %>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex items-center gap-2">
+      <div class="relative">
+        <button onclick="document.getElementById('status-dropdown').classList.toggle('hidden')" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          Zmenit status
+        </button>
+        <div id="status-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+          <% ['NEW', 'CONTACTED', 'REPLIED', 'QUALIFIED', 'CONVERTED', 'REJECTED'].forEach(function(s) { %>
+            <button onclick="changeStatus('<%= s %>')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg">
+              <%= statusMap[s] ? statusMap[s].label : s %>
+            </button>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Two Column Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Left Column: Info -->
+  <div class="lg:col-span-2 space-y-6">
+
+    <!-- Company Info Card -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Informacie</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <% if (lead.companyName) { %>
+          <div>
+            <p class="text-xs text-gray-400 mb-1">Firma</p>
+            <p class="text-sm text-gray-900 font-medium"><%= lead.companyName %></p>
+          </div>
+        <% } %>
+        <% if (lead.companyRegNumber) { %>
+          <div>
+            <p class="text-xs text-gray-400 mb-1">ICO</p>
+            <p class="text-sm text-gray-900"><%= lead.companyRegNumber %></p>
+          </div>
+        <% } %>
+        <% if (lead.companyRevenue) { %>
+          <div>
+            <p class="text-xs text-gray-400 mb-1">Trzby</p>
+            <p class="text-sm text-gray-900"><%= lead.companyRevenue %></p>
+          </div>
+        <% } %>
+        <% if (lead.companyFoundedYear) { %>
+          <div>
+            <p class="text-xs text-gray-400 mb-1">Rok zalozenia</p>
+            <p class="text-sm text-gray-900"><%= lead.companyFoundedYear %></p>
+          </div>
+        <% } %>
+        <% if (lead.clientWebsite) { %>
+          <div>
+            <p class="text-xs text-gray-400 mb-1">Web</p>
+            <a href="<%= lead.clientWebsite %>" target="_blank" class="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+              <i data-lucide="external-link" class="w-3 h-3"></i>
+              <%= lead.clientWebsite %>
+            </a>
+          </div>
+        <% } %>
+        <% if (lead.linkedinUrl) { %>
+          <div>
+            <p class="text-xs text-gray-400 mb-1">LinkedIn</p>
+            <a href="<%= lead.linkedinUrl %>" target="_blank" class="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+              <i data-lucide="linkedin" class="w-3 h-3"></i>
+              Profil
+            </a>
+          </div>
+        <% } %>
+        <% if (lead.profileUrl) { %>
+          <div>
+            <p class="text-xs text-gray-400 mb-1">Profil (zdroj)</p>
+            <a href="<%= lead.profileUrl %>" target="_blank" class="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+              <i data-lucide="user" class="w-3 h-3"></i>
+              <%= lead.source || 'Facebook' %>
+            </a>
+          </div>
+        <% } %>
+        <% if (lead.category) { %>
+          <div>
+            <p class="text-xs text-gray-400 mb-1">Kategoria</p>
+            <span class="inline-block text-xs font-semibold bg-indigo-50 text-indigo-700 rounded px-2 py-1"><%= lead.category %></span>
+          </div>
+        <% } %>
+        <% if (lead.source) { %>
+          <div>
+            <p class="text-xs text-gray-400 mb-1">Zdroj</p>
+            <p class="text-sm text-gray-900"><%= lead.source %></p>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Post Summary -->
+    <% if (lead.postSummary) { %>
+      <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Sumar prispevku</h2>
+        <p class="text-sm text-gray-700 leading-relaxed"><%= lead.postSummary %></p>
+      </div>
+    <% } %>
+
+    <!-- Research Summary -->
+    <% if (lead.researchSummary) { %>
+      <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Vyskum</h2>
+        <p class="text-sm text-gray-700 leading-relaxed"><%= lead.researchSummary %></p>
+      </div>
+    <% } %>
+
+    <!-- Web Analysis -->
+    <% if (lead.webAnalysis) { %>
+      <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Analyza webu</h2>
+        <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line"><%= lead.webAnalysis %></p>
+        <% if (lead.priceEstimate) { %>
+          <div class="mt-4 p-3 bg-indigo-50 rounded-lg">
+            <p class="text-sm font-semibold text-indigo-700">Odhad ceny: <%= lead.priceEstimate %></p>
+          </div>
+        <% } %>
+      </div>
+    <% } %>
+
+    <!-- Notes Section -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Poznamky</h2>
+
+      <!-- Add Note Form -->
+      <form id="note-form" class="mb-6">
+        <div class="flex gap-2">
+          <input
+            type="text"
+            id="note-content"
+            placeholder="Pridajte poznamku..."
+            class="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+            required
+          >
+          <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            Pridat
+          </button>
+        </div>
+      </form>
+
+      <!-- Notes List -->
+      <div id="notes-list" class="space-y-3">
+        <% if (lead.notes && lead.notes.length > 0) { %>
+          <% lead.notes.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(function(note) { %>
+            <div class="flex gap-3 p-3 bg-gray-50 rounded-lg">
+              <div class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <i data-lucide="message-square" class="w-3 h-3 text-gray-500"></i>
+              </div>
+              <div>
+                <p class="text-sm text-gray-700"><%= note.content %></p>
+                <p class="text-xs text-gray-400 mt-1"><%= new Date(note.createdAt).toLocaleString('sk-SK') %></p>
+              </div>
+            </div>
+          <% }); %>
+        <% } else { %>
+          <p class="text-sm text-gray-400 text-center py-4">Ziadne poznamky</p>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Timeline -->
+  <div class="space-y-6">
+    <!-- Tracking Info -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Tracking</h2>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-500">Link otvoreny</span>
+          <span class="text-xs font-medium <%= lead.linkOpened ? 'text-green-600' : 'text-gray-400' %>">
+            <%= lead.linkOpened ? 'Ano' : 'Nie' %>
+          </span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-500">Formular zacaty</span>
+          <span class="text-xs font-medium <%= lead.formStarted ? 'text-green-600' : 'text-gray-400' %>">
+            <%= lead.formStarted ? 'Ano' : 'Nie' %>
+          </span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-500">Formular dokonceny</span>
+          <span class="text-xs font-medium <%= lead.formCompleted ? 'text-green-600' : 'text-gray-400' %>">
+            <%= lead.formCompleted ? 'Ano' : 'Nie' %>
+          </span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-500">Preview zobrazenia</span>
+          <span class="text-xs font-medium text-gray-900"><%= lead.previewViews %></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity Timeline -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Casova os</h2>
+      <div class="space-y-0">
+        <% if (lead.activities && lead.activities.length > 0) { %>
+          <% lead.activities.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(function(activity) { %>
+            <div class="timeline-item relative pl-8 pb-4">
+              <div class="absolute left-0 top-1 w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center">
+                <i data-lucide="activity" class="w-3 h-3 text-indigo-600"></i>
+              </div>
+              <p class="text-sm text-gray-700 font-medium"><%= activity.event %></p>
+              <p class="text-xs text-gray-400"><%= new Date(activity.createdAt).toLocaleString('sk-SK') %></p>
+              <% if (activity.metadata) { %>
+                <p class="text-xs text-gray-500 mt-1"><%= activity.metadata %></p>
+              <% } %>
+            </div>
+          <% }); %>
+        <% } else { %>
+          <p class="text-sm text-gray-400 text-center py-4">Ziadna aktivita</p>
+        <% } %>
+
+        <!-- Created At -->
+        <div class="timeline-item relative pl-8 pb-0">
+          <div class="absolute left-0 top-1 w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center">
+            <i data-lucide="plus-circle" class="w-3 h-3 text-gray-500"></i>
+          </div>
+          <p class="text-sm text-gray-700 font-medium">Lead vytvoreny</p>
+          <p class="text-xs text-gray-400"><%= new Date(lead.createdAt).toLocaleString('sk-SK') %></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const leadId = '<%= lead.id %>';
+
+  // Status change
+  window.changeStatus = async function(newStatus) {
+    document.getElementById('status-dropdown').classList.add('hidden');
+    try {
+      await apiFetch('/api/leads/' + leadId + '/status', {
+        method: 'PUT',
+        body: JSON.stringify({ status: newStatus }),
+      });
+      location.reload();
+    } catch (err) {
+      console.error('Failed to change status:', err);
+    }
+  };
+
+  // Add note
+  document.getElementById('note-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('note-content');
+    const content = input.value.trim();
+    if (!content) return;
+
+    try {
+      const res = await apiFetch('/api/leads/' + leadId + '/notes', {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+      });
+
+      if (res.success) {
+        location.reload();
+      }
+    } catch (err) {
+      console.error('Failed to add note:', err);
+    }
+  });
+
+  // Close dropdown on outside click
+  document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('status-dropdown');
+    if (!e.target.closest('#status-dropdown') && !e.target.closest('button')) {
+      dropdown.classList.add('hidden');
+    }
+  });
+});
+</script>
+
+<% } else { %>
+  <div class="text-center py-12">
+    <i data-lucide="alert-circle" class="w-12 h-12 text-gray-300 mx-auto mb-4"></i>
+    <h2 class="text-lg font-semibold text-gray-700">Lead nebol najdeny</h2>
+    <a href="/leads" class="text-sm text-indigo-600 hover:text-indigo-800 mt-2 inline-block">Spat na board</a>
+  </div>
+<% } %>
+
+<%- include('../layouts/footer') %>
