@@ -4,7 +4,7 @@
   "description": "Synapse System — NestJS backend + Telegram Bot + Web Frontend",
   "main": "dist/main.js",
   "scripts": {
-    "build": "nest build",
+    "build": "prisma generate && nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
