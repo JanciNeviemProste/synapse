@@ -75,6 +75,13 @@ export class FigmaCodegenService {
     screenshotUrl: string,
   ): Promise<string> {
     try {
+      if (!screenshotUrl || screenshotUrl.trim() === '') {
+        throw new Error(
+          `Cannot generate code: screenshot URL is empty for Figma node "${nodeData.id}" ("${nodeData.name}"). ` +
+          'The Figma API returned no image for this node — verify the node exists and is visible.',
+        );
+      }
+
       const descriptor = this.buildDesignDescriptor(nodeData);
       const descriptorJson = JSON.stringify(descriptor, null, 2);
 
@@ -86,11 +93,7 @@ export class FigmaCodegenService {
         userMessage,
       );
 
-      const cleanedCode = generatedCode
-        .replace(/^```html\n?/g, '')
-        .replace(/^```\n?/g, '')
-        .replace(/\n?```$/g, '')
-        .trim();
+      const cleanedCode = this.extractHtml(generatedCode);
 
       this.logger.log(
         `Generated ${cleanedCode.length} chars of HTML from Figma node ${nodeData.id}`,
@@ -104,6 +107,21 @@ export class FigmaCodegenService {
       );
       throw error;
     }
+  }
+
+  private extractHtml(raw: string): string {
+    const codeBlockMatch = raw.match(/```html\s*\n([\s\S]*?)```/);
+    if (codeBlockMatch) return codeBlockMatch[1].trim();
+
+    const doctypeIdx = raw.toLowerCase().indexOf('<!doctype');
+    const htmlOpenIdx = raw.toLowerCase().indexOf('<html');
+    const htmlCloseIdx = raw.toLowerCase().lastIndexOf('</html>');
+    const startIdx = doctypeIdx >= 0 ? doctypeIdx : htmlOpenIdx;
+    if (startIdx >= 0 && htmlCloseIdx > startIdx) {
+      return raw.substring(startIdx, htmlCloseIdx + 7).trim();
+    }
+
+    return raw.trim();
   }
 
   private buildDesignDescriptor(node: FigmaNodeData): DesignDescriptor {

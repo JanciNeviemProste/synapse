@@ -1,5 +1,9 @@
 <%- include('../layouts/header', { title: 'Figma Preview', currentPath: '/figma' }) %>
 
+<% if (typeof task !== 'undefined' && task && (task.status === 'PENDING' || task.status === 'PROCESSING')) { %>
+  <meta http-equiv="refresh" content="10">
+<% } %>
+
 <!-- Page Header -->
 <div class="flex items-center justify-between mb-4">
   <div class="flex items-center gap-3">
@@ -25,23 +29,77 @@
 
 <!-- Preview iframe -->
 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden" style="height: calc(100vh - 200px);">
-  <iframe
-    id="preview-frame"
-    src="/output/figma/<%= task.id %>/index.html"
-    class="w-full h-full border-0"
-    sandbox="allow-scripts allow-same-origin"
-  ></iframe>
+  <% if (typeof task !== 'undefined' && task && (task.status === 'PENDING' || task.status === 'PROCESSING')) { %>
+    <div class="flex flex-col items-center justify-center h-full text-gray-500">
+      <svg class="animate-spin h-10 w-10 text-indigo-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+      </svg>
+      <p class="text-lg font-medium text-gray-700">Spracuva sa... Prosim cakajte.</p>
+      <p class="text-sm text-gray-400 mt-1">Stranka sa automaticky obnovi.</p>
+    </div>
+  <% } else { %>
+    <iframe
+      id="preview-frame"
+      src="/output/figma/<%= task.id %>/index.html"
+      class="w-full h-full border-0"
+      sandbox="allow-scripts allow-same-origin"
+      onload="checkIframeLoad(this)"
+    ></iframe>
+    <div id="preview-fallback" class="hidden flex-col items-center justify-center h-full text-gray-500">
+      <i data-lucide="image-off" class="w-12 h-12 text-gray-300 mb-4"></i>
+      <p class="text-lg font-medium text-gray-700">Preview nie je k dispozicii</p>
+      <p class="text-sm text-gray-400 mt-1">Subor s nahldom nebol najdeny.</p>
+    </div>
+  <% } %>
 </div>
 
 <script>
 function toggleFullscreen() {
   const iframe = document.getElementById('preview-frame');
+  if (!iframe) return;
   if (iframe.requestFullscreen) {
     iframe.requestFullscreen();
   } else if (iframe.webkitRequestFullscreen) {
     iframe.webkitRequestFullscreen();
   }
 }
+
+function checkIframeLoad(iframe) {
+  try {
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    if (!doc || !doc.body || doc.body.innerHTML === '') {
+      showFallback();
+    }
+  } catch (e) {
+    // Cross-origin or other error — cannot inspect, leave as is
+  }
+}
+
+function showFallback() {
+  const iframe = document.getElementById('preview-frame');
+  const fallback = document.getElementById('preview-fallback');
+  if (iframe) iframe.classList.add('hidden');
+  if (fallback) {
+    fallback.classList.remove('hidden');
+    fallback.classList.add('flex');
+  }
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// Also check via fetch for 404
+(function() {
+  const iframe = document.getElementById('preview-frame');
+  if (!iframe) return;
+  var src = iframe.getAttribute('src');
+  if (src) {
+    fetch(src, { method: 'HEAD' }).then(function(res) {
+      if (!res.ok) showFallback();
+    }).catch(function() {
+      showFallback();
+    });
+  }
+})();
 </script>
 
 <%- include('../layouts/footer') %>

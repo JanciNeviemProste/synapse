@@ -53,10 +53,35 @@ export class FigmaController {
         res.status(404).send('Design task not found');
         return;
       }
+
+      // If still processing, render preview with processing flag
+      if (task.status === DesignTaskStatus.PENDING || task.status === DesignTaskStatus.PROCESSING) {
+        res.render(path.join('figma', 'preview'), {
+          title: `Preview — ${task.fileName || task.figmaFileKey}`,
+          currentPath: '/figma',
+          task,
+          processing: true,
+        });
+        return;
+      }
+
+      // Check if output file exists on disk
+      const outputFile = path.resolve(process.cwd(), 'output', 'figma', id, 'index.html');
+      const fileExists = fs.existsSync(outputFile);
+
+      if (!fileExists && task.generatedCode) {
+        // File missing on disk but we have code in DB — recreate it
+        const outputDir = path.resolve(process.cwd(), 'output', 'figma', id);
+        fs.mkdirSync(outputDir, { recursive: true });
+        fs.writeFileSync(outputFile, task.generatedCode, 'utf-8');
+        this.logger.log(`Recreated output file from DB for task ${id}`);
+      }
+
       res.render(path.join('figma', 'preview'), {
         title: `Preview — ${task.fileName || task.figmaFileKey}`,
         currentPath: '/figma',
         task,
+        processing: false,
       });
     } catch (error) {
       this.logger.error('Failed to render preview', (error as Error).message);
@@ -115,7 +140,7 @@ export class FigmaController {
       await this.prisma.designTask.update({
         where: { id },
         data: {
-          status: DesignTaskStatus.PENDING,
+          status: DesignTaskStatus.PROCESSING,
           errorMessage: null,
           processedAt: null,
           generatedCode: null,

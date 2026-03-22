@@ -33,7 +33,7 @@ export class FigmaCron {
       const pendingTasks = await this.prisma.designTask.findMany({
         where: { status: DesignTaskStatus.PENDING },
         orderBy: { createdAt: 'asc' },
-        take: 5,
+        take: 1,
       });
 
       if (pendingTasks.length === 0) {
@@ -82,7 +82,8 @@ export class FigmaCron {
 
       this.logger.log(`Processing design task ${taskId}: ${task.figmaUrl}`);
 
-      const nodeIds = task.figmaNodeIds?.replace(/-/g, ':') || undefined;
+      const parsed = this.figmaService.parseUrl(task.figmaUrl);
+      const nodeIds = parsed.nodeId || undefined;
       const fileData = await this.figmaService.getFileData(
         task.figmaFileKey,
         nodeIds,
@@ -107,13 +108,17 @@ export class FigmaCron {
         : fileData.document;
 
       if (!targetNode) {
-        throw new Error(`Node ${targetNodeId} not found in Figma file`);
+        throw new Error(
+          `Node not found in Figma file: targetNodeId="${targetNodeId}", fileKey="${task.figmaFileKey}"`,
+        );
       }
 
       const generatedCode = await this.figmaCodegenService.generateCode(
         targetNode as Parameters<FigmaCodegenService['generateCode']>[0],
         screenshotUrl,
       );
+
+      const cleanedCode = this.extractHtml(generatedCode);
 
       const outputDir = path.resolve(
         process.cwd(),
@@ -124,7 +129,7 @@ export class FigmaCron {
       fs.mkdirSync(outputDir, { recursive: true });
 
       const outputFilePath = path.join(outputDir, 'index.html');
-      fs.writeFileSync(outputFilePath, generatedCode, 'utf-8');
+      fs.writeFileSync(outputFilePath, cleanedCode, 'utf-8');
 
       const previewUrl = `/figma/preview/${taskId}`;
 
@@ -132,7 +137,7 @@ export class FigmaCron {
         where: { id: taskId },
         data: {
           status: DesignTaskStatus.COMPLETED,
-          generatedCode,
+          generatedCode: cleanedCode,
           outputPath: outputFilePath,
           previewUrl,
           processedAt: new Date(),
@@ -190,5 +195,20 @@ export class FigmaCron {
     }
 
     return null;
+  }
+
+  private extractHtml(raw: string): string {
+    const codeBlockMatch = raw.match(/```html\s*\n([\s\S]*?)```/);
+    if (codeBlockMatch) return codeBlockMatch[1].trim();
+
+    const doctypeIdx = raw.toLowerCase().indexOf('<!doctype');
+    const htmlOpenIdx = raw.toLowerCase().indexOf('<html');
+    const htmlCloseIdx = raw.toLowerCase().lastIndexOf('</html>');
+    const startIdx = doctypeIdx >= 0 ? doctypeIdx : htmlOpenIdx;
+    if (startIdx >= 0 && htmlCloseIdx > startIdx) {
+      return raw.substring(startIdx, htmlCloseIdx + 7).trim();
+    }
+
+    return raw.trim();
   }
 }

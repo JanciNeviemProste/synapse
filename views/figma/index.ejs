@@ -66,6 +66,13 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const tbody = document.getElementById('figma-tasks-body');
 
+  const statusLabels = {
+    'PENDING': 'Cakajuce',
+    'PROCESSING': 'Spracovanie',
+    'COMPLETED': 'COMPLETED',
+    'FAILED': 'FAILED',
+  };
+
   function statusBadge(status) {
     const map = {
       'PENDING': 'bg-gray-100 text-gray-700',
@@ -74,8 +81,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       'FAILED': 'bg-red-100 text-red-800',
     };
     const cls = map[status] || 'bg-gray-100 text-gray-700';
-    return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ' + cls + '">' + status + '</span>';
+    const label = statusLabels[status] || status;
+    return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ' + cls + '">' + label + '</span>';
   }
+
+  let pollingInterval = null;
+  let lastTasks = [];
 
   async function loadTasks() {
     try {
@@ -88,6 +99,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
+      lastTasks = res.data;
+
       tbody.innerHTML = res.data.map(task => {
         const date = formatDate(task.createdAt);
         const urlShort = task.figmaUrl.length > 50 ? task.figmaUrl.substring(0, 50) + '...' : task.figmaUrl;
@@ -97,22 +110,36 @@ document.addEventListener('DOMContentLoaded', async () => {
           duration = secs + 's';
         }
 
+        const isActive = task.status === 'PENDING' || task.status === 'PROCESSING';
+
         var actions = '';
         if (task.status === 'COMPLETED' && task.previewUrl) {
           actions = '<a href="/figma/preview/' + task.id + '" class="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 mr-2"><i data-lucide="eye" class="w-3.5 h-3.5"></i>Zobrazit</a>';
         } else if (task.status === 'FAILED') {
           actions = '<button onclick="retryFigma(\'' + task.id + '\')" class="inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-800 font-medium mr-2"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Retry</button>';
         }
-        actions += '<button onclick="deleteFigma(\'' + task.id + '\')" class="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-800 font-medium"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Zmazat</button>';
+        if (isActive) {
+          actions = '<button disabled class="inline-flex items-center gap-1 text-xs text-gray-400 font-medium mr-2 cursor-not-allowed opacity-50"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Retry</button>' +
+            '<button disabled class="inline-flex items-center gap-1 text-xs text-gray-400 font-medium cursor-not-allowed opacity-50"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Zmazat</button>';
+        } else {
+          actions += '<button onclick="deleteFigma(\'' + task.id + '\')" class="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-800 font-medium"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Zmazat</button>';
+        }
+
+        var statusCell = statusBadge(task.status);
+        if (task.status === 'FAILED' && task.errorMessage) {
+          statusCell += '<div class="text-xs text-red-600 mt-1" style="max-width: 200px; word-break: break-word;">' + task.errorMessage + '</div>';
+        }
 
         return '<tr class="hover:bg-gray-50">' +
           '<td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">' + date + '</td>' +
           '<td class="px-6 py-4 text-sm text-gray-900 max-w-xs"><a href="' + task.figmaUrl + '" target="_blank" class="text-indigo-600 hover:text-indigo-800">' + urlShort + '</a></td>' +
-          '<td class="px-6 py-4 whitespace-nowrap">' + statusBadge(task.status) + '</td>' +
+          '<td class="px-6 py-4">' + statusCell + '</td>' +
           '<td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">' + duration + '</td>' +
           '<td class="px-6 py-4 whitespace-nowrap">' + actions + '</td>' +
           '</tr>';
       }).join('');
+
+      managePollng();
 
       lucide.createIcons();
     } catch (err) {
@@ -173,6 +200,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       alert('Zmazanie zlyhalo: ' + err.message);
     }
   };
+
+  function managePollng() {
+    const hasActive = lastTasks.some(t => t.status === 'PENDING' || t.status === 'PROCESSING');
+    if (hasActive && !pollingInterval) {
+      pollingInterval = setInterval(loadTasks, 5000);
+    } else if (!hasActive && pollingInterval) {
+      clearInterval(pollingInterval);
+      pollingInterval = null;
+    }
+  }
 
   loadTasks();
 });

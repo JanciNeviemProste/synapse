@@ -61,6 +61,51 @@ export class FigmaService {
     return !!this.accessToken;
   }
 
+  private async fetchWithRetry(
+    url: string,
+    options: RequestInit = {},
+    retries = 5,
+  ): Promise<Response> {
+    const delays = [5000, 15000, 30000, 60000, 60000];
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30_000);
+
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal,
+        });
+
+        if (response.status === 429 && attempt < retries) {
+          const delay = delays[attempt] || 8000;
+          this.logger.warn(
+            `Figma API rate limited (429), retrying in ${delay}ms (attempt ${attempt + 1}/${retries})`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
+
+        return response;
+      } catch (error) {
+        if (attempt < retries && (error as Error).name === 'AbortError') {
+          const delay = delays[attempt] || 8000;
+          this.logger.warn(
+            `Figma API request timed out, retrying in ${delay}ms (attempt ${attempt + 1}/${retries})`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
+        throw error;
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    throw new Error('Figma API request failed after all retries');
+  }
+
   async getFileData(
     fileKey: string,
     nodeIds?: string,
@@ -71,7 +116,7 @@ export class FigmaService {
         url += `&ids=${encodeURIComponent(nodeIds)}`;
       }
 
-      const response = await fetch(url, {
+      const response = await this.fetchWithRetry(url, {
         headers: { 'X-Figma-Token': this.accessToken },
       });
 
@@ -98,7 +143,7 @@ export class FigmaService {
     try {
       const url = `${this.baseUrl}/images/${fileKey}?ids=${encodeURIComponent(nodeIds)}&format=png&scale=2`;
 
-      const response = await fetch(url, {
+      const response = await this.fetchWithRetry(url, {
         headers: { 'X-Figma-Token': this.accessToken },
       });
 
