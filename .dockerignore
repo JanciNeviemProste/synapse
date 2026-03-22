@@ -1,0 +1,12 @@
+node_modules
+dist
+.env
+.env.local
+output
+data
+.git
+aicoder
+coverage
+logs
+*.tmp
+*.bak
