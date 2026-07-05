@@ -9,8 +9,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import { TrackingService } from './tracking.service';
 import { PrismaService } from '../database/prisma.service';
+import { Public } from '../common/decorators/public.decorator';
 
 interface TrackingEventBody {
   ref: string;
@@ -27,6 +29,7 @@ export class TrackingController {
     private prisma: PrismaService,
   ) {}
 
+  @Public()
   @Get('t/:ref')
   async handleTrackingRedirect(
     @Param('ref') ref: string,
@@ -63,6 +66,8 @@ export class TrackingController {
     }
   }
 
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('api/tracking/event')
   async recordTrackingEvent(
     @Body() body: TrackingEventBody,

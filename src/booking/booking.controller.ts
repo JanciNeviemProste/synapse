@@ -10,8 +10,10 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { Public } from '../common/decorators/public.decorator';
 import * as path from 'path';
 
 @Controller()
@@ -20,6 +22,7 @@ export class BookingController {
 
   constructor(private bookingService: BookingService) {}
 
+  @Public()
   @Get('booking/public')
   renderPublicPage(
     @Query('ref') ref: string | undefined,
@@ -52,6 +55,7 @@ export class BookingController {
     }
   }
 
+  @Public()
   @Get('api/booking/slots')
   async getAvailableSlots(@Query('days') days?: string) {
     try {
@@ -68,6 +72,8 @@ export class BookingController {
     }
   }
 
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('api/booking')
   async createBooking(@Body() dto: CreateBookingDto) {
     try {

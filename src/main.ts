@@ -30,6 +30,12 @@ async function bootstrap() {
   // Global exception filter
   app.useGlobalFilters(new GlobalExceptionFilter());
 
+  if (!process.env.ADMIN_PASSWORD) {
+    logger.error(
+      'ADMIN_PASSWORD is not set — all admin routes will be denied until it is configured',
+    );
+  }
+
   const port = process.env.PORT || 3000;
   await app.listen(port);
 

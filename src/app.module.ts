@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule } from '@nestjs/throttler';
 import configuration from './common/config/configuration';
+import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { AiModule } from './ai/ai.module';
@@ -22,6 +24,8 @@ import { ClonerModule } from './cloner/cloner.module';
       load: [configuration],
     }),
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }]),
+    AuthModule,
     DatabaseModule,
     TelegramModule,
     AiModule,

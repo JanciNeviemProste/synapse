@@ -1,7 +1,7 @@
 export default () => ({
   port: parseInt(process.env.PORT || '3000', 10),
   appUrl: process.env.APP_URL || 'http://localhost:3000',
-  adminPassword: process.env.ADMIN_PASSWORD || 'admin',
+  adminPassword: process.env.ADMIN_PASSWORD || '',
 
   database: {
     url: process.env.DATABASE_URL,

@@ -10,8 +10,10 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import { ClonerService } from './cloner.service';
 import { CreateCloneDto } from './dto/create-clone.dto';
+import { Public } from '../common/decorators/public.decorator';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -21,6 +23,7 @@ export class ClonerController {
 
   constructor(private clonerService: ClonerService) {}
 
+  @Public()
   @Get('cloner/public')
   renderPublicForm(
     @Query('ref') ref: string | undefined,
@@ -52,6 +55,7 @@ export class ClonerController {
     }
   }
 
+  @Public()
   @Get('cloner/preview/:id')
   async servePreview(
     @Param('id') id: string,
@@ -110,6 +114,8 @@ export class ClonerController {
     }
   }
 
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('api/cloner')
   async createCloneRequest(@Body() dto: CreateCloneDto) {
     try {
@@ -152,6 +158,7 @@ export class ClonerController {
     }
   }
 
+  @Public()
   @Get('api/cloner/:id')
   async getCloneRequest(@Param('id') id: string) {
     if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id)) {

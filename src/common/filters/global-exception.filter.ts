@@ -37,6 +37,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     const isApiRequest = request.path.startsWith('/api/');
 
+    // Browser hitting a protected page without auth → send to login instead of a bare 401.
+    if (status === HttpStatus.UNAUTHORIZED && !isApiRequest) {
+      response.redirect(
+        302,
+        `/login?next=${encodeURIComponent(request.originalUrl)}`,
+      );
+      return;
+    }
+
     if (isApiRequest) {
       response.status(status).json({
         statusCode: status,
