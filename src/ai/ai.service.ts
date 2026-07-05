@@ -230,7 +230,9 @@ export class AiService {
         'Claude CLI generation failed',
         (error as Error).message,
       );
-      throw new Error(`Claude CLI failed: ${(error as Error).message}`);
+      throw new Error(`Claude CLI failed: ${(error as Error).message}`, {
+        cause: error,
+      });
     } finally {
       await unlink(sysFile).catch(() => {});
     }
@@ -268,7 +270,10 @@ export class AiService {
         'Claude CLI image analysis failed',
         (error as Error).message,
       );
-      throw new Error(`Claude CLI image analysis failed: ${(error as Error).message}`);
+      throw new Error(
+        `Claude CLI image analysis failed: ${(error as Error).message}`,
+        { cause: error },
+      );
     } finally {
       await unlink(sysFile).catch(() => {});
       await unlink(imgFile).catch(() => {});

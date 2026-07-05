@@ -1,6 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { TelegramService } from './telegram.service';
-import { InlineKeyboard } from 'grammy';
 
 @Injectable()
 export class TelegramUpdate implements OnModuleInit {

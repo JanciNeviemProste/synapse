@@ -197,7 +197,9 @@ export class FigmaService {
         'Failed to parse Figma URL',
         (error as Error).message,
       );
-      throw new Error(`Failed to parse Figma URL: ${figmaUrl}`);
+      throw new Error(`Failed to parse Figma URL: ${figmaUrl}`, {
+        cause: error,
+      });
     }
   }
 }

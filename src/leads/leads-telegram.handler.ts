@@ -278,7 +278,7 @@ export class LeadsTelegramHandler implements OnModuleInit {
     await this.telegramService.sendMessage(chatId, `✅ Status leadu "${lead.authorName}" zmenený na ${formatLeadStatus(statusStr)}.`);
   }
 
-  private async handleLeadCopy(chatId: number, data: string): Promise<void> {
+  private async handleLeadCopy(chatId: number, _data: string): Promise<void> {
     // "copy" callback — just acknowledge, user copies text from the message above
     await this.telegramService.sendMessage(chatId, '📋 Text je pripravený na skopírovanie z predchádzajúcej správy.');
   }

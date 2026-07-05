@@ -11,15 +11,7 @@ import { ResearchService, ResearchResult } from '../research/research.service';
 import { InlineKeyboard } from 'grammy';
 import { v4 as uuid } from 'uuid';
 import { Lead, LeadStatus, Note } from '@prisma/client';
-import {
-  bold,
-  italic,
-  link,
-  code,
-  formatLeadStatus,
-  formatDate,
-  truncate,
-} from '../common/utils/telegram-formatter';
+import { bold, truncate } from '../common/utils/telegram-formatter';
 
 const LEAD_KEYWORDS = [
   'web', 'webstránk', 'website', 'stránk', 'e-shop', 'eshop',

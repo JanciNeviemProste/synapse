@@ -190,16 +190,11 @@ export class OrsrService {
       });
 
       const companyData = await page.evaluate(() => {
-        const getText = (selector: string): string => {
-          const el = document.querySelector(selector);
-          return el?.textContent?.trim() || '';
-        };
-
         const rows = document.querySelectorAll('table.result tr, .search-result tr');
         let companyName = '';
         let ico = '';
         let foundingDate = '';
-        let address = '';
+        const address = '';
 
         for (const row of rows) {
           const text = row.textContent || '';

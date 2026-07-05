@@ -157,7 +157,6 @@ export class WebAnalyzerService {
         );
 
         const h1Elements = document.querySelectorAll('h1');
-        const images = document.querySelectorAll('img');
         const imagesWithoutAlt = document.querySelectorAll('img:not([alt])');
 
         const seoIssues: string[] = [];

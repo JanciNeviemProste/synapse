@@ -9,7 +9,6 @@ import { InlineKeyboard } from 'grammy';
 import {
   bold,
   code,
-  truncate,
 } from '../common/utils/telegram-formatter';
 
 @Injectable()

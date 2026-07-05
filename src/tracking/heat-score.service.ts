@@ -2,13 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { InlineKeyboard } from 'grammy';
-import {
-  bold,
-  link,
-  formatDate,
-} from '../common/utils/telegram-formatter';
+import { bold, formatDate } from '../common/utils/telegram-formatter';
 
-const HEAT_SCORE_MAP: Record<string, number> = {
+export const HEAT_SCORE_MAP: Record<string, number> = {
   link_opened: 15,
   form_started: 20,
   form_completed: 20,
@@ -17,7 +13,15 @@ const HEAT_SCORE_MAP: Record<string, number> = {
   preview_revisit: 15,
 };
 
-const HOT_LEAD_THRESHOLD = 70;
+export const HOT_LEAD_THRESHOLD = 70;
+
+/** True only when the score crosses the hot threshold with this update. */
+export function crossedHotThreshold(
+  previousScore: number,
+  newScore: number,
+): boolean {
+  return newScore >= HOT_LEAD_THRESHOLD && previousScore < HOT_LEAD_THRESHOLD;
+}
 
 @Injectable()
 export class HeatScoreService {
@@ -46,10 +50,7 @@ export class HeatScoreService {
         `Heat score for lead ${leadId} updated by +${scoreIncrement} (now ${lead.heatScore})`,
       );
 
-      if (
-        lead.heatScore >= HOT_LEAD_THRESHOLD &&
-        lead.heatScore - scoreIncrement < HOT_LEAD_THRESHOLD
-      ) {
+      if (crossedHotThreshold(lead.heatScore - scoreIncrement, lead.heatScore)) {
         await this.sendHotLeadAlert(lead.id, lead.authorName, lead.heatScore);
       }
     } catch (error) {

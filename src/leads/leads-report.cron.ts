@@ -5,7 +5,6 @@ import { TelegramService } from '../telegram/telegram.service';
 import { LeadStatus } from '@prisma/client';
 import {
   bold,
-  italic,
   code,
   formatLeadStatus,
   formatDate,

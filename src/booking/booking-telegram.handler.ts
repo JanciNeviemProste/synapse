@@ -6,7 +6,6 @@ import { InlineKeyboard } from 'grammy';
 import {
   bold,
   code,
-  formatDate,
 } from '../common/utils/telegram-formatter';
 
 @Injectable()
@@ -80,7 +79,7 @@ export class BookingTelegramHandler implements OnModuleInit {
         timeStyle: 'short',
       });
 
-      let message =
+      const message =
         `📅 ${bold('Booking Detail')}\n\n` +
         `${bold('Klient:')} ${booking.clientName}\n` +
         `${bold('Email:')} ${booking.clientEmail}\n` +
@@ -95,7 +94,7 @@ export class BookingTelegramHandler implements OnModuleInit {
         .text('Zrušiť', `booking_cancel_${booking.id}`);
 
       await this.telegramService.sendWithKeyboard(chatId, message, keyboard);
-    } catch (error) {
+    } catch {
       await this.telegramService.sendMessage(chatId, `❌ Booking nenájdený.`);
     }
   }
