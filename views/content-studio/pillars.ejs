@@ -1,0 +1,115 @@
+<%- include('../layouts/header', { title: 'Piliere | Content Studio', currentPath: '/content-studio' }) %>
+
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-gray-900">Obsahové piliere</h1>
+  <p class="text-sm text-gray-500 mt-1">Témy, okolo ktorých sa točí všetok obsah</p>
+</div>
+
+<%- include('_subnav', { subnavPath: '/content-studio/pillars' }) %>
+
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-3">
+    <% if (pillars.length === 0) { %>
+      <div class="bg-white rounded-xl border border-gray-200 p-6 text-sm text-gray-400">Žiadne piliere — pridaj vlastný alebo si nechaj navrhnúť od AI.</div>
+    <% } %>
+    <% for (const p of pillars) { %>
+    <div class="bg-white rounded-xl border <%= p.isActive ? 'border-gray-200' : 'border-gray-100 opacity-60' %> p-4 flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          <h3 class="font-semibold text-gray-900"><%= p.name %></h3>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">priorita <%= p.priority %></span>
+          <% if (p.targetFrequency) { %><span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600"><%= p.targetFrequency %></span><% } %>
+        </div>
+        <% if (p.description) { %><p class="text-xs text-gray-500 mt-1"><%= p.description %></p><% } %>
+        <% if (p.complianceNotes) { %><p class="text-xs text-amber-600 mt-1">⚠ <%= p.complianceNotes %></p><% } %>
+      </div>
+      <div class="flex items-center gap-2 shrink-0 text-xs">
+        <button class="pillar-toggle text-gray-500 hover:text-indigo-600" data-id="<%= p.id %>" data-active="<%= p.isActive %>"><%= p.isActive ? 'Deaktivovať' : 'Aktivovať' %></button>
+        <button class="pillar-delete text-red-500 hover:text-red-700" data-id="<%= p.id %>">Zmazať</button>
+      </div>
+    </div>
+    <% } %>
+  </div>
+
+  <div class="space-y-6">
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 class="font-semibold text-gray-900 mb-3">Nový pilier</h2>
+      <form id="pillar-form" class="space-y-3">
+        <input name="name" required maxlength="200" placeholder="Názov" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+        <textarea name="description" rows="2" maxlength="2000" placeholder="Popis" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></textarea>
+        <div class="flex gap-2">
+          <input name="priority" type="number" min="0" max="10" value="5" class="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm" title="Priorita">
+          <input name="targetFrequency" maxlength="100" placeholder="Frekvencia (napr. 1x týždenne)" class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm">
+        </div>
+        <button class="w-full px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">Pridať</button>
+      </form>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 class="font-semibold text-gray-900 mb-1">AI návrhy</h2>
+      <p class="text-xs text-gray-400 mb-3">AI navrhne piliere podľa Brand DNA a nápadov. Nič sa neuloží bez tvojho schválenia.</p>
+      <button id="suggest-btn" class="w-full px-4 py-2 bg-white border border-indigo-300 text-indigo-700 text-sm font-semibold rounded-lg hover:bg-indigo-50">Navrhnúť piliere</button>
+      <div id="suggestions" class="mt-3 space-y-2"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('pillar-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const res = await fetch('/api/content-studio/pillars', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: f.get('name'), description: f.get('description') || undefined,
+      priority: parseInt(f.get('priority') || '5', 10), targetFrequency: f.get('targetFrequency') || undefined,
+    }),
+  });
+  if (res.ok) location.reload(); else alert('Uloženie zlyhalo');
+});
+
+document.querySelectorAll('.pillar-toggle').forEach(b => b.addEventListener('click', async () => {
+  await fetch('/api/content-studio/pillars/' + b.dataset.id, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ isActive: b.dataset.active !== 'true' }),
+  });
+  location.reload();
+}));
+
+document.querySelectorAll('.pillar-delete').forEach(b => b.addEventListener('click', async () => {
+  if (!confirm('Zmazať pilier?')) return;
+  const res = await fetch('/api/content-studio/pillars/' + b.dataset.id, { method: 'DELETE' });
+  if (res.ok) location.reload();
+}));
+
+document.getElementById('suggest-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('suggest-btn');
+  btn.disabled = true; btn.textContent = 'Generujem...';
+  try {
+    const res = await fetch('/api/content-studio/pillars/suggest', { method: 'POST' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const { suggestions } = await res.json();
+    document.getElementById('suggestions').innerHTML = suggestions.map((s, i) =>
+      '<div class="border border-gray-200 rounded-lg p-2 text-xs">' +
+      '<div class="font-medium text-gray-900">' + s.name + '</div>' +
+      '<div class="text-gray-500">' + (s.description || '') + '</div>' +
+      '<button class="approve-suggestion text-indigo-600 hover:underline mt-1" data-i="' + i + '">Schváliť a pridať</button></div>'
+    ).join('');
+    window.__suggestions = suggestions;
+    document.querySelectorAll('.approve-suggestion').forEach(a => a.addEventListener('click', async () => {
+      const s = window.__suggestions[parseInt(a.dataset.i, 10)];
+      const res2 = await fetch('/api/content-studio/pillars', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: s.name, description: s.description, priority: s.priority, targetFrequency: s.targetFrequency, complianceNotes: s.complianceNotes || undefined }),
+      });
+      if (res2.ok) location.reload();
+    }));
+  } catch (err) {
+    alert('Návrh zlyhal: ' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Navrhnúť piliere';
+  }
+});
+</script>
+
+<%- include('../layouts/footer') %>

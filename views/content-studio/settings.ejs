@@ -1,0 +1,143 @@
+<%- include('../layouts/header', { title: 'Nastavenia | Content Studio', currentPath: '/content-studio' }) %>
+
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-gray-900">Nastavenia</h1>
+  <p class="text-sm text-gray-500 mt-1">Brand DNA a Knowledge Base — vstupujú do každého generovania</p>
+</div>
+
+<%- include('_subnav', { subnavPath: '/content-studio/settings' }) %>
+
+<div class="grid lg:grid-cols-2 gap-6">
+  <!-- Brand DNA -->
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-1">Brand DNA</h2>
+    <p class="text-xs text-gray-400 mb-4">Ovplyvňuje každý výstup: extrakciu nápadov, piliere, plány, skripty aj review.</p>
+    <form id="brand-form" class="space-y-3">
+      <% const arr = (v) => Array.isArray(v) ? v.join('\n') : ''; %>
+      <input name="brandName" required maxlength="200" placeholder="Názov značky *" value="<%= profile ? profile.brandName : '' %>" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+      <div class="grid grid-cols-2 gap-2">
+        <input name="industry" maxlength="200" placeholder="Odvetvie" value="<%= profile && profile.industry ? profile.industry : '' %>" class="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+        <select name="addressing" class="rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white">
+          <option value="tykanie" <%= profile && profile.addressing === 'tykanie' ? 'selected' : '' %>>Tykanie</option>
+          <option value="vykanie" <%= profile && profile.addressing === 'vykanie' ? 'selected' : '' %>>Vykanie</option>
+        </select>
+      </div>
+      <textarea name="targetAudience" rows="2" maxlength="2000" placeholder="Cieľové publikum" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"><%= profile && profile.targetAudience ? profile.targetAudience : '' %></textarea>
+      <textarea name="communicationStyle" rows="2" maxlength="2000" placeholder="Štýl komunikácie" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"><%= profile && profile.communicationStyle ? profile.communicationStyle : '' %></textarea>
+      <div class="grid grid-cols-2 gap-2">
+        <textarea name="preferredPhrases" rows="3" placeholder="Preferované frázy (1 na riadok)" class="rounded-lg border border-gray-300 px-3 py-2 text-sm"><%= profile ? arr(profile.preferredPhrases) : '' %></textarea>
+        <textarea name="forbiddenPhrases" rows="3" placeholder="Zakázané frázy (1 na riadok)" class="rounded-lg border border-gray-300 px-3 py-2 text-sm"><%= profile ? arr(profile.forbiddenPhrases) : '' %></textarea>
+      </div>
+      <textarea name="requiredCtas" rows="2" placeholder="Povinné CTA frázy (1 na riadok)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"><%= profile ? arr(profile.requiredCtas) : '' %></textarea>
+      <div class="grid grid-cols-3 gap-2">
+        <label class="text-xs text-gray-500">Humor (0–5)
+          <input name="humorLevel" type="number" min="0" max="5" value="<%= profile ? profile.humorLevel : 3 %>" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-1">
+        </label>
+        <label class="text-xs text-gray-500">Formálnosť (0–5)
+          <input name="formalityLevel" type="number" min="0" max="5" value="<%= profile ? profile.formalityLevel : 3 %>" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-1">
+        </label>
+        <label class="text-xs text-gray-500">Energia (0–5)
+          <input name="energyLevel" type="number" min="0" max="5" value="<%= profile ? profile.energyLevel : 3 %>" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-1">
+        </label>
+      </div>
+      <textarea name="trustRules" rows="2" maxlength="4000" placeholder="Pravidlá budovania dôvery" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"><%= profile && profile.trustRules ? profile.trustRules : '' %></textarea>
+      <textarea name="complianceNotes" rows="2" maxlength="4000" placeholder="Compliance poznámky (napr. regulácia NBS, disclaimery)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"><%= profile && profile.complianceNotes ? profile.complianceNotes : '' %></textarea>
+      <button class="w-full px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">Uložiť Brand DNA</button>
+      <p id="brand-saved" class="hidden text-sm text-green-600 text-center">Uložené ✓</p>
+    </form>
+  </div>
+
+  <!-- Knowledge Base -->
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-1">Knowledge Base</h2>
+    <p class="text-xs text-gray-400 mb-4">Interné znalosti — do promptov sa vyberá len relevantný výsek podľa témy.</p>
+    <form id="kb-form" class="space-y-3 mb-5 pb-5 border-b border-gray-100">
+      <div class="grid grid-cols-2 gap-2">
+        <input name="title" required maxlength="200" placeholder="Názov *" class="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+        <input name="category" maxlength="100" placeholder="Kategória" class="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+      </div>
+      <textarea name="content" required rows="4" maxlength="100000" placeholder="Obsah (text / markdown) *" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></textarea>
+      <input name="tags" placeholder="Tagy oddelené čiarkou" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+      <button class="w-full px-4 py-2 bg-white border border-indigo-300 text-indigo-700 text-sm font-semibold rounded-lg hover:bg-indigo-50">Pridať dokument</button>
+    </form>
+    <% if (docs.length === 0) { %>
+      <p class="text-sm text-gray-400">Žiadne dokumenty.</p>
+    <% } %>
+    <ul class="divide-y divide-gray-100">
+      <% for (const doc of docs) { %>
+      <li class="py-2.5 flex items-center justify-between gap-2">
+        <div class="min-w-0">
+          <span class="text-sm font-medium <%= doc.isActive ? 'text-gray-900' : 'text-gray-400 line-through' %>"><%= doc.title %></span>
+          <span class="text-xs text-gray-400 ml-1"><%= doc.category || '' %> · <%= doc.content.length %> zn.</span>
+        </div>
+        <div class="flex items-center gap-2 text-xs shrink-0">
+          <button class="kb-toggle text-gray-500 hover:text-indigo-600" data-id="<%= doc.id %>" data-active="<%= doc.isActive %>"><%= doc.isActive ? 'Vypnúť' : 'Zapnúť' %></button>
+          <button class="kb-delete text-red-500 hover:text-red-700" data-id="<%= doc.id %>">Zmazať</button>
+        </div>
+      </li>
+      <% } %>
+    </ul>
+  </div>
+</div>
+
+<script>
+const lines = (v) => v.split('\n').map(s => s.trim()).filter(Boolean);
+
+document.getElementById('brand-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const res = await fetch('/api/content-studio/brand-profile', {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      brandName: f.get('brandName'),
+      industry: f.get('industry') || undefined,
+      targetAudience: f.get('targetAudience') || undefined,
+      communicationStyle: f.get('communicationStyle') || undefined,
+      addressing: f.get('addressing'),
+      preferredPhrases: lines(f.get('preferredPhrases') || ''),
+      forbiddenPhrases: lines(f.get('forbiddenPhrases') || ''),
+      requiredCtas: lines(f.get('requiredCtas') || ''),
+      humorLevel: parseInt(f.get('humorLevel'), 10),
+      formalityLevel: parseInt(f.get('formalityLevel'), 10),
+      energyLevel: parseInt(f.get('energyLevel'), 10),
+      trustRules: f.get('trustRules') || undefined,
+      complianceNotes: f.get('complianceNotes') || undefined,
+    }),
+  });
+  if (res.ok) {
+    const saved = document.getElementById('brand-saved');
+    saved.classList.remove('hidden');
+    setTimeout(() => saved.classList.add('hidden'), 3000);
+  } else alert('Uloženie zlyhalo');
+});
+
+document.getElementById('kb-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const res = await fetch('/api/content-studio/knowledge', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: f.get('title'), category: f.get('category') || undefined,
+      content: f.get('content'),
+      tags: (f.get('tags') || '').split(',').map(s => s.trim()).filter(Boolean),
+    }),
+  });
+  if (res.ok) location.reload(); else alert('Uloženie zlyhalo');
+});
+
+document.querySelectorAll('.kb-toggle').forEach(b => b.addEventListener('click', async () => {
+  await fetch('/api/content-studio/knowledge/' + b.dataset.id, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ isActive: b.dataset.active !== 'true' }),
+  });
+  location.reload();
+}));
+
+document.querySelectorAll('.kb-delete').forEach(b => b.addEventListener('click', async () => {
+  if (!confirm('Zmazať dokument?')) return;
+  const res = await fetch('/api/content-studio/knowledge/' + b.dataset.id, { method: 'DELETE' });
+  if (res.ok) location.reload();
+}));
+</script>
+
+<%- include('../layouts/footer') %>

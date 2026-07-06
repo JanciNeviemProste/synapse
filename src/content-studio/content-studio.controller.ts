@@ -1,0 +1,113 @@
+import { Controller, Get, Logger, Res } from '@nestjs/common';
+import { Response } from 'express';
+import * as path from 'path';
+import { PrismaService } from '../database/prisma.service';
+import { BrandProfileService } from './services/brand-profile.service';
+import { IdeasService } from './services/ideas.service';
+import { InspirationService } from './services/inspiration.service';
+import { KnowledgeService } from './services/knowledge.service';
+import { PillarsService } from './services/pillars.service';
+import { TemplatesService } from './services/templates.service';
+
+/** SSR pages. Admin-only via the global AuthGuard — no @Public() here. */
+@Controller('content-studio')
+export class ContentStudioController {
+  private readonly logger = new Logger(ContentStudioController.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ideasService: IdeasService,
+    private readonly templatesService: TemplatesService,
+    private readonly pillarsService: PillarsService,
+    private readonly inspirationService: InspirationService,
+    private readonly brandProfileService: BrandProfileService,
+    private readonly knowledgeService: KnowledgeService,
+  ) {}
+
+  private render(res: Response, view: string, data: Record<string, unknown>): void {
+    try {
+      res.render(path.join('content-studio', view), data);
+    } catch (error) {
+      this.logger.error(`Failed to render ${view}`, (error as Error).message);
+      res.status(500).send('Internal Server Error');
+    }
+  }
+
+  @Get()
+  async dashboard(@Res() res: Response): Promise<void> {
+    try {
+      const [
+        ideasCaptured,
+        scriptsGenerated,
+        scriptsApproved,
+        activePlans,
+        pendingReviews,
+        voiceSeconds,
+        recentSessions,
+        recentIdeas,
+      ] = await Promise.all([
+        this.prisma.contentIdea.count(),
+        this.prisma.reelScript.count(),
+        this.prisma.reelScript.count({ where: { status: { in: ['APPROVED', 'READY_FOR_VIDEO'] } } }),
+        this.prisma.contentPlan.count({ where: { status: 'ACTIVE' } }),
+        this.prisma.reelScript.count({ where: { status: { in: ['GENERATED', 'UNDER_REVIEW', 'EDITED'] } } }),
+        this.prisma.contentSession.aggregate({ _sum: { durationSeconds: true } }),
+        this.ideasService.listSessions(5),
+        this.ideasService.list().then((all) => all.slice(0, 8)),
+      ]);
+
+      this.render(res, 'dashboard', {
+        metrics: {
+          ideasCaptured,
+          scriptsGenerated,
+          scriptsApproved,
+          activePlans,
+          pendingReviews,
+          voiceMinutes: Math.round((voiceSeconds._sum.durationSeconds || 0) / 60),
+          videosAnalyzed: 0, // Content Intelligence arrives in CS-6
+        },
+        recentSessions,
+        recentIdeas,
+      });
+    } catch (error) {
+      this.logger.error('Failed to load dashboard', (error as Error).message);
+      res.status(500).send('Internal Server Error');
+    }
+  }
+
+  @Get('ideas')
+  async ideas(@Res() res: Response): Promise<void> {
+    const [ideas, sessions] = await Promise.all([
+      this.ideasService.list(),
+      this.ideasService.listSessions(5),
+    ]);
+    this.render(res, 'ideas', { ideas, sessions });
+  }
+
+  @Get('templates')
+  async templates(@Res() res: Response): Promise<void> {
+    const templates = await this.templatesService.list(true);
+    this.render(res, 'templates', { templates });
+  }
+
+  @Get('pillars')
+  async pillars(@Res() res: Response): Promise<void> {
+    const pillars = await this.pillarsService.list();
+    this.render(res, 'pillars', { pillars });
+  }
+
+  @Get('inspiration')
+  async inspiration(@Res() res: Response): Promise<void> {
+    const sources = await this.inspirationService.list();
+    this.render(res, 'inspiration', { sources });
+  }
+
+  @Get('settings')
+  async settings(@Res() res: Response): Promise<void> {
+    const [profile, docs] = await Promise.all([
+      this.brandProfileService.getActive(),
+      this.knowledgeService.list(),
+    ]);
+    this.render(res, 'settings', { profile, docs });
+  }
+}

@@ -1,24 +1,43 @@
 import { Module } from '@nestjs/common';
 import { AiModule } from '../ai/ai.module';
+import { ContentStudioApiController } from './content-studio-api.controller';
+import { ContentStudioController } from './content-studio.controller';
+import { ContentJobsService } from './jobs/content-jobs.service';
 import { AnthropicContentProvider } from './providers/anthropic.provider';
 import { MockContentProvider } from './providers/mock.provider';
 import { ContentProviderFactory } from './providers/provider.factory';
+import { BrandProfileService } from './services/brand-profile.service';
+import { IdeasService } from './services/ideas.service';
+import { InspirationService } from './services/inspiration.service';
+import { KnowledgeService } from './services/knowledge.service';
+import { PillarsService } from './services/pillars.service';
+import { TemplatesService } from './services/templates.service';
 import { ContentStorageService } from './storage/content-storage.service';
-import { ContentJobsService } from './jobs/content-jobs.service';
 
 @Module({
   imports: [AiModule],
+  controllers: [ContentStudioController, ContentStudioApiController],
   providers: [
     AnthropicContentProvider,
     MockContentProvider,
     ContentProviderFactory,
     ContentStorageService,
     ContentJobsService,
+    BrandProfileService,
+    KnowledgeService,
+    IdeasService,
+    TemplatesService,
+    PillarsService,
+    InspirationService,
   ],
   exports: [
     ContentProviderFactory,
     ContentStorageService,
     ContentJobsService,
+    BrandProfileService,
+    KnowledgeService,
+    InspirationService,
+    TemplatesService,
   ],
 })
 export class ContentStudioModule {}

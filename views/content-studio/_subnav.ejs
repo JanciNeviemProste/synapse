@@ -1,0 +1,16 @@
+<div class="flex items-center gap-1 mb-6 overflow-x-auto pb-1">
+  <% const tabs = [
+    { href: '/content-studio', label: 'Prehľad', icon: 'layout-dashboard', exact: true },
+    { href: '/content-studio/ideas', label: 'Nápady', icon: 'lightbulb' },
+    { href: '/content-studio/templates', label: 'Šablóny', icon: 'layout-template' },
+    { href: '/content-studio/pillars', label: 'Piliere', icon: 'columns-3' },
+    { href: '/content-studio/inspiration', label: 'Inšpirácie', icon: 'sparkles' },
+    { href: '/content-studio/settings', label: 'Nastavenia', icon: 'settings' },
+  ]; %>
+  <% for (const tab of tabs) { %>
+    <% const active = tab.exact ? subnavPath === tab.href : subnavPath.startsWith(tab.href); %>
+    <a href="<%= tab.href %>" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap <%= active ? 'bg-indigo-600 text-white' : 'text-gray-600 bg-white border border-gray-200 hover:bg-gray-50' %>">
+      <i data-lucide="<%= tab.icon %>" class="w-3.5 h-3.5"></i><%= tab.label %>
+    </a>
+  <% } %>
+</div>

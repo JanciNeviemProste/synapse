@@ -1,0 +1,124 @@
+<%- include('../layouts/header', { title: 'Content Studio', currentPath: '/content-studio' }) %>
+
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Content Studio</h1>
+    <p class="text-sm text-gray-500 mt-1">Od nápadu po schválený Reel skript</p>
+  </div>
+</div>
+
+<%- include('_subnav', { subnavPath: '/content-studio' }) %>
+
+<!-- Metrics -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+  <% const cards = [
+    { label: 'Zachytené nápady', value: metrics.ideasCaptured, icon: 'lightbulb' },
+    { label: 'Vygenerované skripty', value: metrics.scriptsGenerated, icon: 'file-text' },
+    { label: 'Schválené skripty', value: metrics.scriptsApproved, icon: 'check-circle-2' },
+    { label: 'Čaká na schválenie', value: metrics.pendingReviews, icon: 'clock' },
+    { label: 'Aktívne plány', value: metrics.activePlans, icon: 'calendar-days' },
+    { label: 'Voice minúty', value: metrics.voiceMinutes, icon: 'mic' },
+    { label: 'Analyzované videá', value: metrics.videosAnalyzed, icon: 'video' },
+  ]; %>
+  <% for (const card of cards) { %>
+  <div class="bg-white rounded-xl border border-gray-200 p-4">
+    <div class="flex items-center gap-2 text-gray-500 text-xs font-medium uppercase tracking-wide">
+      <i data-lucide="<%= card.icon %>" class="w-4 h-4"></i><%= card.label %>
+    </div>
+    <div class="text-3xl font-bold text-gray-900 mt-2"><%= card.value %></div>
+  </div>
+  <% } %>
+</div>
+
+<!-- Quick actions -->
+<div class="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+  <h2 class="text-lg font-semibold text-gray-900 mb-4">Rýchly nápad</h2>
+  <form id="quick-idea-form" class="space-y-3">
+    <textarea id="quick-idea-text" rows="3" required maxlength="5000"
+      class="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none resize-y"
+      placeholder="Napíš hrubú myšlienku... napr.: Dnes som riešil klienta, ktorý mal tri poistky, ale ani jedna mu dobre nekryla výpadok príjmu."></textarea>
+    <div class="flex items-center justify-between">
+      <p class="text-xs text-gray-400">AI z textu vytiahne 3–10 content nápadov (Brand DNA + Knowledge Base sa použijú automaticky).</p>
+      <button type="submit" id="quick-idea-submit"
+        class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">
+        <i data-lucide="wand-2" class="w-4 h-4"></i>Extrahovať nápady
+      </button>
+    </div>
+  </form>
+  <div id="quick-idea-result" class="hidden mt-4 border-t border-gray-100 pt-4"></div>
+</div>
+
+<div class="grid md:grid-cols-2 gap-6">
+  <!-- Recent ideas -->
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-gray-900">Najnovšie nápady</h2>
+      <a href="/content-studio/ideas" class="text-sm text-indigo-600 hover:underline">Všetky →</a>
+    </div>
+    <% if (recentIdeas.length === 0) { %>
+      <p class="text-sm text-gray-400">Zatiaľ žiadne nápady — začni rýchlym nápadom vyššie.</p>
+    <% } %>
+    <ul class="divide-y divide-gray-100">
+      <% for (const idea of recentIdeas) { %>
+      <li class="py-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-sm font-medium text-gray-900 truncate"><%= idea.title %></span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600"><%= idea.status %></span>
+        </div>
+        <% if (idea.keyMessage) { %><p class="text-xs text-gray-500 mt-0.5 truncate"><%= idea.keyMessage %></p><% } %>
+      </li>
+      <% } %>
+    </ul>
+  </div>
+
+  <!-- Recent sessions -->
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Posledné sessions</h2>
+    <% if (recentSessions.length === 0) { %>
+      <p class="text-sm text-gray-400">Žiadne sessions.</p>
+    <% } %>
+    <ul class="divide-y divide-gray-100">
+      <% for (const session of recentSessions) { %>
+      <li class="py-2.5 flex items-center justify-between gap-2">
+        <div class="min-w-0">
+          <span class="text-sm font-medium text-gray-900 truncate block"><%= session.title || session.type %></span>
+          <span class="text-xs text-gray-400"><%= session.type %> · <%= new Date(session.createdAt).toLocaleString('sk-SK') %></span>
+        </div>
+        <span class="text-xs px-2 py-0.5 rounded-full <%= session.status === 'COMPLETED' ? 'bg-green-50 text-green-700' : session.status === 'FAILED' ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-600' %>"><%= session.status %></span>
+      </li>
+      <% } %>
+    </ul>
+  </div>
+</div>
+
+<script>
+document.getElementById('quick-idea-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('quick-idea-submit');
+  const result = document.getElementById('quick-idea-result');
+  btn.disabled = true;
+  btn.innerHTML = 'Generujem...';
+  try {
+    const res = await fetch('/api/content-studio/ideas/quick', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: document.getElementById('quick-idea-text').value }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    result.classList.remove('hidden');
+    result.innerHTML = '<p class="text-sm font-medium text-green-700 mb-2">Vytvorených ' + data.ideas.length +
+      ' nápadov.</p>' + data.ideas.map(i =>
+      '<div class="text-sm text-gray-800 py-1">• ' + i.title + '</div>').join('') +
+      '<a href="/content-studio/ideas" class="text-sm text-indigo-600 hover:underline">Spravovať nápady →</a>';
+  } catch (err) {
+    result.classList.remove('hidden');
+    result.innerHTML = '<p class="text-sm text-red-600">Extrakcia zlyhala: ' + err.message + '</p>';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Extrahovať nápady';
+  }
+});
+</script>
+
+<%- include('../layouts/footer') %>

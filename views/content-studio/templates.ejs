@@ -1,0 +1,51 @@
+<%- include('../layouts/header', { title: 'Šablóny | Content Studio', currentPath: '/content-studio' }) %>
+
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-gray-900">Šablóny skriptov</h1>
+  <p class="text-sm text-gray-500 mt-1">14 systémových šablón + vlastné. Systémové sú nemenné — duplikuj a uprav.</p>
+</div>
+
+<%- include('_subnav', { subnavPath: '/content-studio/templates' }) %>
+
+<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+  <% for (const t of templates) { %>
+  <div class="bg-white rounded-xl border <%= t.isArchived ? 'border-gray-100 opacity-60' : 'border-gray-200' %> p-5 flex flex-col">
+    <div class="flex items-start justify-between gap-2">
+      <h3 class="font-semibold text-gray-900"><%= t.name %></h3>
+      <div class="flex items-center gap-1 shrink-0">
+        <% if (t.isSystemTemplate) { %><span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-medium">SYSTÉM</span><% } %>
+        <% if (t.isDefault) { %><span class="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-700 font-medium">DEFAULT</span><% } %>
+      </div>
+    </div>
+    <p class="text-xs text-gray-500 mt-1 flex-1"><%= t.description || '' %></p>
+    <div class="text-xs text-gray-400 mt-2 space-y-0.5">
+      <% if (t.recommendedGoal) { %><div>Cieľ: <%= t.recommendedGoal %></div><% } %>
+      <% if (t.recommendedLength) { %><div>Dĺžka: <%= t.recommendedLength %></div><% } %>
+      <% if (t.hookPattern) { %><div class="italic">„<%= t.hookPattern %>"</div><% } %>
+    </div>
+    <div class="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100 text-xs">
+      <button class="tpl-fav text-gray-500 hover:text-amber-600" data-id="<%= t.id %>" data-fav="<%= t.isFavorite %>"><%= t.isFavorite ? '★ Obľúbená' : '☆ Obľúbiť' %></button>
+      <button class="tpl-dup text-gray-500 hover:text-indigo-600" data-id="<%= t.id %>">Duplikovať</button>
+      <% if (!t.isSystemTemplate) { %>
+        <button class="tpl-arch text-gray-500 hover:text-red-600" data-id="<%= t.id %>" data-arch="<%= t.isArchived %>"><%= t.isArchived ? 'Obnoviť' : 'Archivovať' %></button>
+      <% } %>
+      <button class="tpl-def text-gray-500 hover:text-green-700 ml-auto" data-id="<%= t.id %>">Nastaviť default</button>
+    </div>
+  </div>
+  <% } %>
+</div>
+
+<script>
+const flag = (id, body) => fetch('/api/content-studio/templates/' + id + '/flags', {
+  method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+}).then(r => { if (r.ok) location.reload(); else alert('Akcia zlyhala'); });
+
+document.querySelectorAll('.tpl-fav').forEach(b => b.addEventListener('click', () => flag(b.dataset.id, { isFavorite: b.dataset.fav !== 'true' })));
+document.querySelectorAll('.tpl-arch').forEach(b => b.addEventListener('click', () => flag(b.dataset.id, { isArchived: b.dataset.arch !== 'true' })));
+document.querySelectorAll('.tpl-def').forEach(b => b.addEventListener('click', () => flag(b.dataset.id, { isDefault: true })));
+document.querySelectorAll('.tpl-dup').forEach(b => b.addEventListener('click', () =>
+  fetch('/api/content-studio/templates/' + b.dataset.id + '/duplicate', { method: 'POST' })
+    .then(r => { if (r.ok) location.reload(); else alert('Duplikovanie zlyhalo'); })));
+</script>
+
+<%- include('../layouts/footer') %>

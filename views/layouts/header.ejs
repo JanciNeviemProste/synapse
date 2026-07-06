@@ -43,6 +43,9 @@
           <a href="/booking/admin" class="px-3 py-2 rounded-lg text-sm font-medium <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/booking') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-100' %>">
             <i data-lucide="calendar" class="w-4 h-4 inline mr-1"></i>Booking
           </a>
+          <a href="/content-studio" class="px-3 py-2 rounded-lg text-sm font-medium <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/content-studio') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-100' %>">
+            <i data-lucide="clapperboard" class="w-4 h-4 inline mr-1"></i>Content Studio
+          </a>
         </div>
         <!-- Mobile menu button -->
         <div class="md:hidden">
@@ -61,6 +64,7 @@
         <a href="/cloner/admin" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">Cloner</a>
         <a href="/figma" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">Figma</a>
         <a href="/booking/admin" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">Booking</a>
+        <a href="/content-studio" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">Content Studio</a>
       </div>
     </div>
   </nav>
