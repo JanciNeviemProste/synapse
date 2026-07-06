@@ -50,6 +50,29 @@ export default () => ({
     token: process.env.VERCEL_TOKEN || '',
   },
 
+  contentStudio: {
+    strategyProvider: process.env.CONTENT_STRATEGY_PROVIDER || 'auto',
+    strategyModel: process.env.CONTENT_STRATEGY_MODEL || '',
+    scriptProvider: process.env.SCRIPT_GENERATION_PROVIDER || 'auto',
+    scriptModel: process.env.SCRIPT_GENERATION_MODEL || '',
+    reviewProvider: process.env.SCRIPT_REVIEW_PROVIDER || 'auto',
+    reviewModel: process.env.SCRIPT_REVIEW_MODEL || '',
+    complianceProvider: process.env.COMPLIANCE_PROVIDER || 'auto',
+    complianceModel: process.env.COMPLIANCE_MODEL || '',
+    transcriptionProvider: process.env.TRANSCRIPTION_PROVIDER || 'auto',
+    transcriptionModel: process.env.TRANSCRIPTION_MODEL || '',
+    realtimeProvider: process.env.REALTIME_VOICE_PROVIDER || 'auto',
+    realtimeModel: process.env.REALTIME_VOICE_MODEL || '',
+    openaiApiKey: process.env.OPENAI_API_KEY || '',
+    storageDir: process.env.CONTENT_STUDIO_STORAGE_DIR || 'storage/content-studio',
+    maxAudioSizeMb: parseInt(process.env.CONTENT_AUDIO_MAX_FILE_SIZE_MB || '50', 10),
+    maxVideoSizeMb: parseInt(process.env.VIDEO_ANALYSIS_MAX_FILE_SIZE_MB || '300', 10),
+    maxVideoDurationSeconds: parseInt(
+      process.env.VIDEO_ANALYSIS_MAX_DURATION_SECONDS || '300',
+      10,
+    ),
+  },
+
   cron: {
     leadInterval: process.env.LEAD_CRON_INTERVAL || '*/5 * * * *',
     figmaInterval: process.env.FIGMA_CRON_INTERVAL || '*/30 * * * *',

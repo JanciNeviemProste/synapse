@@ -244,3 +244,314 @@ enum CloneStatus {
   COMPLETED
   FAILED
 }
+
+// ==================== CONTENT STUDIO ====================
+
+model BrandProfile {
+  id                 String   @id @default(uuid())
+  brandName          String
+  industry           String?
+  targetAudience     String?  @db.Text
+  communicationStyle String?  @db.Text
+  addressing         String   @default("tykanie")
+  preferredPhrases   Json?
+  forbiddenPhrases   Json?
+  requiredCtas       Json?
+  humorLevel         Int      @default(3)
+  formalityLevel     Int      @default(3)
+  energyLevel        Int      @default(3)
+  trustRules         String?  @db.Text
+  complianceNotes    String?  @db.Text
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model KnowledgeDoc {
+  id        String   @id @default(uuid())
+  title     String
+  category  String?
+  content   String   @db.Text
+  tags      Json?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+}
+
+model ContentSession {
+  id               String               @id @default(uuid())
+  type             ContentSessionType
+  title            String?
+  status           ContentSessionStatus @default(PENDING)
+  transcript       String?              @db.Text
+  summary          String?              @db.Text
+  extractedData    Json?
+  durationSeconds  Int?
+  audioStoragePath String?
+  saveAudio        Boolean              @default(false)
+  errorMessage     String?              @db.Text
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  ideas            ContentIdea[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ContentIdea {
+  id                  String            @id @default(uuid())
+  sessionId           String?
+  session             ContentSession?   @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  title               String
+  description         String?           @db.Text
+  keyMessage          String?           @db.Text
+  suggestedGoal       String?
+  suggestedPillarId   String?
+  suggestedTemplateId String?
+  sourceType          String            @default("text_note")
+  status              ContentIdeaStatus @default(NEW)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  scripts             ReelScript[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ScriptTemplate {
+  id                 String   @id @default(uuid())
+  name               String
+  description        String?  @db.Text
+  structure          Json
+  recommendedGoal    String?
+  recommendedLength  String?
+  recommendedStyle   String?
+  recommendedEmotion String?
+  hookPattern        String?  @db.Text
+  bodyPattern        String?  @db.Text
+  ctaPattern         String?  @db.Text
+  complianceRules    String?  @db.Text
+  isSystemTemplate   Boolean  @default(false)
+  isFavorite         Boolean  @default(false)
+  isDefault          Boolean  @default(false)
+  isArchived         Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([isArchived])
+}
+
+model InspirationSource {
+  id                String          @id @default(uuid())
+  type              InspirationType
+  title             String
+  sourceUrl         String?
+  storagePath       String?
+  transcript        String?         @db.Text
+  userNotes         String?         @db.Text
+  extractedPatterns Json?
+  status            String          @default("new")
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([type])
+}
+
+model ContentPillar {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?  @db.Text
+  priority        Int      @default(0)
+  targetFrequency String?
+  complianceNotes String?  @db.Text
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+model ContentPlan {
+  id                String            @id @default(uuid())
+  name              String
+  startDate         DateTime
+  endDate           DateTime
+  postsPerWeek      Int               @default(3)
+  goals             Json?
+  status            ContentPlanStatus @default(DRAFT)
+  generationContext Json?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  items             ContentPlanItem[]
+
+  @@index([status])
+}
+
+model ContentPlanItem {
+  id             String            @id @default(uuid())
+  contentPlanId  String
+  plan           ContentPlan       @relation(fields: [contentPlanId], references: [id], onDelete: Cascade)
+  scheduledDate  DateTime
+  workingTitle   String
+  topic          String?
+  pillarId       String?
+  templateId     String?
+  goal           String?
+  targetAudience String?
+  length         String?
+  style          String?
+  emotion        String?
+  suggestedHook  String?           @db.Text
+  cta            String?           @db.Text
+  status         ContentItemStatus @default(IDEA)
+  sortOrder      Int               @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  scripts        ReelScript[]
+
+  @@index([contentPlanId])
+  @@index([status])
+  @@index([scheduledDate])
+}
+
+model ReelScript {
+  id                String           @id @default(uuid())
+  contentPlanItemId String?
+  planItem          ContentPlanItem? @relation(fields: [contentPlanItemId], references: [id], onDelete: SetNull)
+  contentIdeaId     String?
+  idea              ContentIdea?     @relation(fields: [contentIdeaId], references: [id], onDelete: SetNull)
+  versionName       String           @default("A")
+  strategy          Json?
+  hook              String?          @db.Text
+  setup             String?          @db.Text
+  mainMessage       String?          @db.Text
+  keyInsight        String?          @db.Text
+  cta               String?          @db.Text
+  spokenScript      String?          @db.Text
+  productionPlan    Json?
+  instagramAssets   Json?
+  safety            Json?
+  reviewerScores    Json?
+  reviewerFeedback  Json?
+  status            ReelScriptStatus @default(DRAFT)
+  isSelected        Boolean          @default(false)
+  approvedAt        DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([status])
+  @@index([contentPlanItemId])
+  @@index([contentIdeaId])
+}
+
+model StylePreference {
+  id              String                @id @default(uuid())
+  sourceScriptId  String?
+  preferenceType  String
+  preferenceValue String                @db.Text
+  confidence      Float                 @default(0.5)
+  status          StylePreferenceStatus @default(PROPOSED)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([status])
+  @@index([preferenceType])
+}
+
+model ContentJob {
+  id          String           @id @default(uuid())
+  type        String
+  payload     Json?
+  status      ContentJobStatus @default(QUEUED)
+  attempts    Int              @default(0)
+  maxAttempts Int              @default(3)
+  lastError   String?          @db.Text
+  result      Json?
+  scheduledAt DateTime         @default(now())
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([status, scheduledAt])
+  @@index([type])
+}
+
+enum ContentSessionType {
+  QUICK_VOICE_NOTE
+  AI_INTERVIEW
+  TEXT_NOTE
+  AUDIO_UPLOAD
+}
+
+enum ContentSessionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ContentIdeaStatus {
+  NEW
+  APPROVED
+  CONVERTED
+  REJECTED
+  ARCHIVED
+}
+
+enum InspirationType {
+  INSTAGRAM_PROFILE
+  INSTAGRAM_REEL
+  SCREENSHOT
+  VIDEO_UPLOAD
+  TRANSCRIPT
+  MANUAL_NOTE
+}
+
+enum ContentPlanStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum ContentItemStatus {
+  IDEA
+  PLANNED
+  SCRIPT_DRAFT
+  WAITING_FOR_APPROVAL
+  APPROVED
+  REJECTED
+  READY_FOR_VIDEO
+  COMPLETED
+  ARCHIVED
+}
+
+enum ReelScriptStatus {
+  DRAFT
+  GENERATED
+  UNDER_REVIEW
+  EDITED
+  APPROVED
+  REJECTED
+  READY_FOR_VIDEO
+  ARCHIVED
+}
+
+enum StylePreferenceStatus {
+  PROPOSED
+  ACTIVE
+  DISABLED
+}
+
+enum ContentJobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
