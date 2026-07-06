@@ -28,5 +28,8 @@ Jediný admin (Janči). Auth: `ADMIN_PASSWORD` → browser cookie `synapse_auth`
 | XSS (dangerouslySetInnerHTML) | N/A / neoverené | EJS views — treba audit `<%-` (unescaped) výstupov, zatiaľ nerobený |
 | IDOR / CSRF | neoverené | vyžaduje bežiacu app (6B pentest) |
 
+## Content Studio (2026-07-06)
+Celý modul admin-only (globálny guard, žiadna `@Public()` routa). AI endpointy per-route rate limity (3–20/min podľa ceny). Uploady: MIME allowlist + size limity (audio 50 MB, video 300 MB), generované názvy súborov, privátny storage mimo web rootov. Prompt injection: untrusted vstupy v `<untrusted>` delimitroch, AI výstupy validované Zod schémami (nič nevalidované sa neukladá). Privacy: audio len s opt-inom, granulárne mazanie (audio/session/video+odvodené), efemérne realtime tokeny (API kľúč nikdy do browsera). EJS všade `<%=` (escaped). Runtime pentest čaká na DB.
+
 ## 6B Mini-pentest
 Zatiaľ nevykonaný — nie je live/preview URL v tejto session. Povinný pred najbližším production deployom; výsledky doplniť sem (tabuľka test × očakávanie × výsledok × PASS/FAIL). **Pozn.: kým je P0 (nezapojený AuthGuard) otvorený, každý deploy je blokovaný.**

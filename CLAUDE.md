@@ -16,11 +16,12 @@ Jeden NestJS proces: EJS SSR dashboard + Telegram bot + crony. Dashboard/kanban 
 
 Moduly: `auth` (login + globálne gardy), `leads`, `coder`, `research`, `tracking`, `booking`, `figma`, `cloner`, `gmail`, `images`, `telegram`, `ai`, `database`, `common`. Vo výstavbe: `content-studio` (viď nižšie).
 
-## Content Studio (vo výstavbe, od 2026-07-06)
-- Spec: `docs/content-studio/SPEC.md` (nápady → piliere → plány → Reel skripty → schvaľovanie → handoff; voice vstupy; Content Intelligence video analýza). Realizuje sa celý spec po fázach CS-1..CS-9; adaptácie na single-tenant NestJS/EJS zdokumentované v `docs/DECISIONS.md` (2026-07-06).
-- Kľúčové pravidlá zo specu: human approval povinný (server-side), žiadne auto-publikovanie, žiadny Instagram scraping, mock mode musí fungovať bez platených kľúčov, AI skóre vždy označené ako odhad, inšpirácie len na vzory — nikdy nekopírovať formulácie.
-- Provider architektúra: business logika závisí na interfaces (`src/content-studio/providers/`), nie SDK; adaptery anthropic (nad `AiService`) / openai / mock; výber cez env `*_PROVIDER`.
-- Stav fáz: CS-1 done (docs). CS-2+ viď task list / session log.
+## Content Studio (od 2026-07-06, fázy CS-1..CS-8 hotové)
+- Spec: `docs/content-studio/SPEC.md` · architektúra + limity + V2 roadmap: `docs/content-studio/ARCHITECTURE.md` · adaptačné ADR: `docs/DECISIONS.md` (2026-07-06).
+- Flow: nápad (text/voice/audio/AI interview) → piliere → plány → Reel skripty (3 varianty) → AI review + compliance → schválenie (server-side vynútené) → handoff export. Plus Content Intelligence (video → analýza → Content DNA) a Style Memory.
+- Kľúčové pravidlá zo specu: human approval povinný (server-side), žiadne auto-publikovanie, žiadny Instagram scraping, mock mode funguje bez platených kľúčov, AI skóre vždy označené ako odhad, inšpirácie len na vzory — nikdy nekopírovať formulácie, video výkon = hypotézy, nie kauzalita.
+- Provider architektúra: interfaces v `src/content-studio/providers/`; adaptery anthropic (nad `AiService`) / openai (fetch, bez SDK) / mock; výber cez env `*_PROVIDER` (auto = reálny len s credentials). Nové env mená viď ARCHITECTURE.md.
+- **Čaká na DB:** migrácia `content_studio_init` sa vytvorí až PO baseline (fáza 4). Runtime nikdy nebežal (DB down). FFmpeg pridaný do Dockerfile.
 
 ## Auth model (od 2026-07-05)
 - **Nová routa = admin by default.** Globálny `APP_GUARD`: ThrottlerGuard → AuthGuard (`src/auth/auth.module.ts`).
@@ -51,6 +52,12 @@ Moduly: `auth` (login + globálne gardy), `leads`, `coder`, `research`, `trackin
 Build PASS · tsc PASS · 18/18 testov PASS · lint PASS · audit 0 high (7 moderate) · CI green (run 28755176540). P0 auth opravený (commit 0f41227), runtime dôkaz čaká na DB. Deploy-ready: NIE (blokátor: DB + neoverené moduly).
 
 ## Session log
+### 2026-07-06: Content Studio CS-1..CS-9
+- Rozhodnutie: celý spec postupne (Janči), adaptovaný na single-tenant NestJS/EJS.
+- Commity: a5beb89 (CS-1 docs), c5c06db (CS-2 data/domain), c3e6f6f (CS-3 core UI), 4791d2a (CS-4 voice), e60891c (CS-5 interview), bf9d67d (CS-6 intelligence), baf9c8c (CS-7 plans/scripts), d32ce0b (CS-8 style memory), + CS-9 docs.
+- 61 testov PASS, build/tsc/lint zelené po každej fáze. Nové deps: zod, @types/multer (dev).
+- BLOKÁTORY: DB down (migrácie + runtime), OPENAI_API_KEY chýba (voice live), .env.example needitovateľný (permission deny) — env mená zdokumentované v docs/content-studio/ARCHITECTURE.md.
+
 ### 2026-07-05: Audit + fázy 1–3 realizácie
 - Audit: nájdený P0 (nezapojený AuthGuard), 20 high vulns, 0 testov.
 - Fáza 1 (0f41227): globálny auth (APP_GUARD ThrottlerGuard→AuthGuard), @Public() allowlist, /login stránka + cookie, query password zrušený, fail-closed ADMIN_PASSWORD, rate limity.
