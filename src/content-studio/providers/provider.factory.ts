@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AnthropicContentProvider } from './anthropic.provider';
 import { MockContentProvider } from './mock.provider';
+import { OpenAiRealtimeProvider } from './openai-realtime.provider';
 import { OpenAiTranscriptionProvider } from './openai-transcription.provider';
 import {
   ComplianceProvider,
@@ -52,6 +53,7 @@ export class ContentProviderFactory {
     private readonly anthropicProvider: AnthropicContentProvider,
     private readonly mockProvider: MockContentProvider,
     private readonly openaiTranscription: OpenAiTranscriptionProvider,
+    private readonly openaiRealtime: OpenAiRealtimeProvider,
   ) {}
 
   private creds(): { anthropic: boolean; openai: boolean } {
@@ -103,13 +105,8 @@ export class ContentProviderFactory {
   }
 
   getRealtimeProvider(): RealtimeVoiceProvider {
-    // OpenAI Realtime adapter arrives in CS-5; until then auto resolves to mock.
-    const kind = this.kindFor('realtime', 'contentStudio.realtimeProvider');
-    if (kind === 'openai') {
-      this.logger.warn(
-        'OpenAI realtime adapter not implemented yet (CS-5) — using mock',
-      );
-    }
-    return this.mockProvider;
+    return this.kindFor('realtime', 'contentStudio.realtimeProvider') === 'openai'
+      ? this.openaiRealtime
+      : this.mockProvider;
   }
 }

@@ -111,11 +111,26 @@ export interface StyleMemoryInput {
   editedScript: string;
 }
 
+export interface InterviewTurn {
+  role: 'ai' | 'user';
+  text: string;
+}
+
+export interface InterviewNextQuestion {
+  question: string;
+  done: boolean;
+  reason?: string;
+}
+
 export interface ContentStrategyProvider {
   extractIdeas(input: ContentStrategyInput): Promise<ExtractedIdeas>;
   createContentPillars(input: ContentPillarInput): Promise<ContentPillarsOutput>;
   createContentPlan(input: ContentPlanInput): Promise<GeneratedContentPlan>;
   buildInterviewBrief(transcript: string, brand?: BrandContext): Promise<InterviewBrief>;
+  nextInterviewQuestion(
+    history: InterviewTurn[],
+    brand?: BrandContext,
+  ): Promise<InterviewNextQuestion>;
   analyzeInspiration(input: InspirationAnalysisInput): Promise<InspirationPatterns>;
   analyzeStyle(input: StyleMemoryInput): Promise<StyleMemoryAnalysis>;
 }

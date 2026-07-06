@@ -158,6 +158,28 @@ export class MockContentProvider
     };
   }
 
+  private static readonly INTERVIEW_QUESTIONS = [
+    'Čo sa dnes stalo — o čom by si chcel natočiť video?',
+    'Aká bola najväčšia chyba alebo prekvapenie v tej situácii?',
+    'Kto presne by mal to video vidieť?',
+    'Čo sa má divák naučiť alebo urobiť po pozretí?',
+    'Je tam niečo citlivé, čo treba anonymizovať?',
+  ];
+
+  async nextInterviewQuestion(
+    history: import('./provider.interfaces').InterviewTurn[],
+  ): Promise<import('./provider.interfaces').InterviewNextQuestion> {
+    const askedCount = history.filter((t) => t.role === 'ai').length;
+    if (askedCount >= MockContentProvider.INTERVIEW_QUESTIONS.length) {
+      return { question: '', done: true, reason: '[MOCK] Mám dosť informácií na brief.' };
+    }
+    return {
+      question: `[MOCK] ${MockContentProvider.INTERVIEW_QUESTIONS[askedCount]}`,
+      done: false,
+      reason: '[MOCK] Zbieram kontext.',
+    };
+  }
+
   async analyzeInspiration(
     input: InspirationAnalysisInput,
   ): Promise<InspirationPatterns> {
@@ -284,8 +306,9 @@ export class MockContentProvider
     };
   }
 
+  /** Real WebRTC voice can't run against a mock — UI falls back to text interview. */
   isAvailable(): boolean {
-    return true;
+    return false;
   }
 
   async createSessionToken(

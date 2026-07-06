@@ -34,7 +34,9 @@ import { InspirationService } from './services/inspiration.service';
 import { KnowledgeService } from './services/knowledge.service';
 import { PillarsService } from './services/pillars.service';
 import { TemplatesService } from './services/templates.service';
+import { InterviewService } from './services/interview.service';
 import { VoiceService } from './services/voice.service';
+import { InterviewTurn } from './providers/provider.interfaces';
 
 /** JSON API. Admin-only via the global AuthGuard — no @Public() here. */
 @Controller('api/content-studio')
@@ -47,7 +49,51 @@ export class ContentStudioApiController {
     private readonly brandProfileService: BrandProfileService,
     private readonly knowledgeService: KnowledgeService,
     private readonly voiceService: VoiceService,
+    private readonly interviewService: InterviewService,
   ) {}
+
+  // ---- AI Interview (spec §7.4) ----
+
+  @Post('interview/next')
+  @Throttle({ default: { limit: 20, ttl: 60000 } }) // AI call per turn
+  async interviewNext(@Body() body: { history?: InterviewTurn[] }) {
+    return this.interviewService.nextQuestion(this.sanitizeHistory(body.history));
+  }
+
+  @Post('interview/finish')
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // AI call
+  async interviewFinish(@Body() body: { history?: InterviewTurn[] }) {
+    const history = this.sanitizeHistory(body.history);
+    if (history.length === 0) {
+      throw new BadRequestException('Prázdny rozhovor sa nedá uzavrieť.');
+    }
+    return this.interviewService.finish(history);
+  }
+
+  @Get('interview/realtime-availability')
+  interviewRealtimeAvailability() {
+    return { available: this.interviewService.isRealtimeAvailable() };
+  }
+
+  @Post('interview/realtime-token')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  async interviewRealtimeToken() {
+    return this.interviewService.createRealtimeToken();
+  }
+
+  private sanitizeHistory(history: unknown): InterviewTurn[] {
+    if (!Array.isArray(history)) return [];
+    return history
+      .filter(
+        (t): t is InterviewTurn =>
+          !!t &&
+          typeof t === 'object' &&
+          ((t as InterviewTurn).role === 'ai' || (t as InterviewTurn).role === 'user') &&
+          typeof (t as InterviewTurn).text === 'string',
+      )
+      .slice(0, 100)
+      .map((t) => ({ role: t.role, text: t.text.substring(0, 4000) }));
+  }
 
   // ---- Voice (spec §7.2/§7.3) ----
 

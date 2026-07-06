@@ -40,6 +40,13 @@ export const interviewBriefSchema = z.object({
 });
 export type InterviewBrief = z.infer<typeof interviewBriefSchema>;
 
+export const interviewNextQuestionSchema = z.object({
+  question: z.string().default(''),
+  done: z.boolean().default(false),
+  reason: z.string().default(''),
+});
+export type InterviewNextQuestionOutput = z.infer<typeof interviewNextQuestionSchema>;
+
 // ---- Content pillars ----
 
 export const contentPillarsSchema = z.object({

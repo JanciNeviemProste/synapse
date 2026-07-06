@@ -85,6 +85,11 @@ export class ContentStudioController {
     this.render(res, 'voice', { sessions });
   }
 
+  @Get('interview')
+  async interview(@Res() res: Response): Promise<void> {
+    this.render(res, 'interview', {});
+  }
+
   @Get('ideas')
   async ideas(@Res() res: Response): Promise<void> {
     const [ideas, sessions] = await Promise.all([

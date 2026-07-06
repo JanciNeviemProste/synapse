@@ -1,4 +1,4 @@
-import { BrandContext } from '../providers/provider.interfaces';
+import { BrandContext, InterviewTurn } from '../providers/provider.interfaces';
 import {
   ANTI_INJECTION_RULES,
   OUTPUT_RULES,
@@ -13,6 +13,33 @@ export function buildInterviewInstructions(brand?: BrandContext): string {
 Cieľ: vytiahnuť z používateľa materiál na content (čo sa stalo, najväčšia chyba, pre koho je to video, čo sa má divák naučiť, aký je cieľ, aká akcia diváka).
 Pravidlá: krátke relevantné otázky, žiadne monológy, neopakuj sa, neprerušuj zbytočne, skonči keď máš dosť informácií. Ak zaznejú citlivé údaje klientov, upozorni na anonymizáciu.
 ${renderBrandContext(brand)}`;
+}
+
+const NEXT_QUESTION_SHAPE = `{
+  "question": string, // dalsia kratka otazka v slovencine; prazdne ak done=true
+  "done": boolean,    // true ak uz mas dost informacii na content brief
+  "reason": string    // strucne preco pokracujes / koncis
+}`;
+
+export function buildNextQuestionPrompt(
+  history: InterviewTurn[],
+  brand?: BrandContext,
+): { system: string; user: string } {
+  const rendered = history
+    .map((t) => `${t.role === 'ai' ? 'AI' : 'POUŽÍVATEĽ'}: ${t.text}`)
+    .join('\n');
+  return {
+    system: `${buildInterviewInstructions(brand)}
+${ANTI_INJECTION_RULES}
+${OUTPUT_RULES}
+${jsonSchemaInstruction(NEXT_QUESTION_SHAPE)}`,
+    user: [
+      history.length === 0
+        ? 'Rozhovor sa začína. Polož úvodnú otázku (napr. čo sa dnes stalo / čo chceš natočiť).'
+        : wrapUntrusted('interview-history', rendered),
+      'Neopakuj už položené otázky. Ak máš dosť informácií (téma, publikum, cieľ, pointa), ukonči rozhovor (done=true).',
+    ].join('\n'),
+  };
 }
 
 const BRIEF_SHAPE = `{

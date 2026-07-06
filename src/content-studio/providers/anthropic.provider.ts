@@ -22,6 +22,7 @@ import {
   generatedScriptsSchema,
   inspirationPatternsSchema,
   interviewBriefSchema,
+  interviewNextQuestionSchema,
   scriptReviewSchema,
   styleMemoryAnalysisSchema,
 } from '../schemas/ai-output.schemas';
@@ -39,6 +40,8 @@ import {
   ScriptReviewProvider,
   StyleMemoryInput,
   BrandContext,
+  InterviewNextQuestion,
+  InterviewTurn,
 } from './provider.interfaces';
 import { buildIdeaExtractionPrompt } from '../prompts/voice-idea-extraction.prompt';
 import { buildContentPillarsPrompt } from '../prompts/content-pillars.prompt';
@@ -46,7 +49,10 @@ import { buildContentPlanPrompt } from '../prompts/content-plan-generation.promp
 import { buildScriptGenerationPrompt } from '../prompts/reel-script-generation.prompt';
 import { buildScriptReviewPrompt } from '../prompts/reel-script-review.prompt';
 import { buildComplianceCheckPrompt } from '../prompts/compliance-check.prompt';
-import { buildInterviewBriefPrompt } from '../prompts/ai-content-interview.prompt';
+import {
+  buildInterviewBriefPrompt,
+  buildNextQuestionPrompt,
+} from '../prompts/ai-content-interview.prompt';
 import { buildInspirationAnalysisPrompt } from '../prompts/inspiration-pattern-analysis.prompt';
 import { buildStyleMemoryPrompt } from '../prompts/style-memory-analysis.prompt';
 
@@ -132,6 +138,19 @@ export class AnthropicContentProvider
   ): Promise<InterviewBrief> {
     const { system, user } = buildInterviewBriefPrompt(transcript, brand);
     return this.generateValidated(interviewBriefSchema, system, user, 'interview-brief');
+  }
+
+  nextInterviewQuestion(
+    history: InterviewTurn[],
+    brand?: BrandContext,
+  ): Promise<InterviewNextQuestion> {
+    const { system, user } = buildNextQuestionPrompt(history, brand);
+    return this.generateValidated(
+      interviewNextQuestionSchema,
+      system,
+      user,
+      'interview-question',
+    );
   }
 
   analyzeInspiration(input: InspirationAnalysisInput): Promise<InspirationPatterns> {

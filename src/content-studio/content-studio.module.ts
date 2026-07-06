@@ -5,10 +5,12 @@ import { ContentStudioController } from './content-studio.controller';
 import { ContentJobsService } from './jobs/content-jobs.service';
 import { AnthropicContentProvider } from './providers/anthropic.provider';
 import { MockContentProvider } from './providers/mock.provider';
+import { OpenAiRealtimeProvider } from './providers/openai-realtime.provider';
 import { OpenAiTranscriptionProvider } from './providers/openai-transcription.provider';
 import { ContentProviderFactory } from './providers/provider.factory';
 import { BrandProfileService } from './services/brand-profile.service';
 import { IdeasService } from './services/ideas.service';
+import { InterviewService } from './services/interview.service';
 import { InspirationService } from './services/inspiration.service';
 import { KnowledgeService } from './services/knowledge.service';
 import { PillarsService } from './services/pillars.service';
@@ -23,6 +25,7 @@ import { ContentStorageService } from './storage/content-storage.service';
     AnthropicContentProvider,
     MockContentProvider,
     OpenAiTranscriptionProvider,
+    OpenAiRealtimeProvider,
     ContentProviderFactory,
     ContentStorageService,
     ContentJobsService,
@@ -33,6 +36,7 @@ import { ContentStorageService } from './storage/content-storage.service';
     PillarsService,
     InspirationService,
     VoiceService,
+    InterviewService,
   ],
   exports: [
     ContentProviderFactory,
