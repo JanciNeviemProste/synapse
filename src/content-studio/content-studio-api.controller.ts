@@ -16,17 +16,22 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import {
   BrandProfileDto,
+  GeneratePlanDto,
+  GenerateScriptsDto,
   InspirationDto,
   KnowledgeDocDto,
   MergeIdeasDto,
   PillarDto,
   QuickIdeaDto,
+  ScriptStatusDto,
   TemplateDto,
   TemplateFlagsDto,
   UpdateIdeaDto,
   UpdateInspirationDto,
   UpdateKnowledgeDocDto,
   UpdatePillarDto,
+  UpdatePlanItemDto,
+  UpdateScriptDto,
 } from './dto/content-studio.dtos';
 import { BrandProfileService } from './services/brand-profile.service';
 import { IdeasService } from './services/ideas.service';
@@ -39,6 +44,8 @@ import { VoiceService } from './services/voice.service';
 import { InterviewTurn } from './providers/provider.interfaces';
 import { ContentDnaService } from './intelligence/content-dna.service';
 import { IntelligenceService } from './intelligence/intelligence.service';
+import { PlansService } from './services/plans.service';
+import { ScriptsService } from './services/scripts.service';
 
 /** JSON API. Admin-only via the global AuthGuard — no @Public() here. */
 @Controller('api/content-studio')
@@ -54,7 +61,96 @@ export class ContentStudioApiController {
     private readonly interviewService: InterviewService,
     private readonly intelligenceService: IntelligenceService,
     private readonly contentDnaService: ContentDnaService,
+    private readonly plansService: PlansService,
+    private readonly scriptsService: ScriptsService,
   ) {}
+
+  // ---- Content plans (spec §15) ----
+
+  @Post('plans/generate')
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // AI call
+  async generatePlan(@Body() body: GeneratePlanDto) {
+    return this.plansService.generate({ ...body, goals: body.goals ?? [] });
+  }
+
+  @Get('plans')
+  async listPlans() {
+    return this.plansService.list();
+  }
+
+  @Patch('plans/:id/status')
+  async setPlanStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { status: 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED' },
+  ) {
+    if (!['DRAFT', 'ACTIVE', 'COMPLETED', 'ARCHIVED'].includes(body.status)) {
+      throw new BadRequestException('Neplatný status');
+    }
+    return this.plansService.setStatus(id, body.status);
+  }
+
+  @Delete('plans/:id')
+  async deletePlan(@Param('id', ParseUUIDPipe) id: string) {
+    await this.plansService.delete(id);
+    return { ok: true };
+  }
+
+  @Patch('plans/items/:itemId')
+  async updatePlanItem(
+    @Param('itemId', ParseUUIDPipe) itemId: string,
+    @Body() body: UpdatePlanItemDto,
+  ) {
+    return this.plansService.updateItem(itemId, body as never);
+  }
+
+  // ---- Reel scripts (spec §16–17, §21–22, §27) ----
+
+  @Post('scripts/generate')
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // heavy AI call (3 variants)
+  async generateScripts(@Body() body: GenerateScriptsDto) {
+    return this.scriptsService.generate(body);
+  }
+
+  @Get('scripts')
+  async listScripts() {
+    return this.scriptsService.list();
+  }
+
+  @Post('scripts/:id/review')
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // AI call
+  async reviewScript(@Param('id', ParseUUIDPipe) id: string) {
+    return this.scriptsService.review(id);
+  }
+
+  @Post('scripts/:id/compliance')
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // AI call
+  async scriptCompliance(@Param('id', ParseUUIDPipe) id: string) {
+    return this.scriptsService.complianceCheck(id);
+  }
+
+  @Patch('scripts/:id')
+  async updateScript(@Param('id', ParseUUIDPipe) id: string, @Body() body: UpdateScriptDto) {
+    return this.scriptsService.updateContent(id, body);
+  }
+
+  @Patch('scripts/:id/status')
+  async setScriptStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: ScriptStatusDto,
+  ) {
+    return this.scriptsService.setStatus(id, body.status as never);
+  }
+
+  @Get('scripts/:id/handoff')
+  async scriptHandoff(@Param('id', ParseUUIDPipe) id: string) {
+    return this.scriptsService.buildHandoff(id);
+  }
+
+  @Delete('scripts/:id')
+  async deleteScript(@Param('id', ParseUUIDPipe) id: string) {
+    await this.scriptsService.delete(id);
+    return { ok: true };
+  }
 
   // ---- Content Intelligence (spec §14) ----
 

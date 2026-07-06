@@ -1,0 +1,119 @@
+<%- include('../layouts/header', { title: 'Skripty | Content Studio', currentPath: '/content-studio' }) %>
+
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-gray-900">Reel skripty</h1>
+  <p class="text-sm text-gray-500 mt-1">Generovanie 3 variantov (A profesionálny · B storytelling · C najsilnejší hook)</p>
+</div>
+
+<%- include('_subnav', { subnavPath: '/content-studio/scripts' }) %>
+
+<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+  <h2 class="text-lg font-semibold text-gray-900 mb-3">Nový skript</h2>
+  <form id="gen-form" class="grid md:grid-cols-3 gap-3">
+    <label class="text-xs text-gray-500 md:col-span-3">Téma *
+      <input name="topic" required maxlength="500" placeholder="napr. Poistenie výpadku príjmu pre živnostníkov" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-0.5">
+    </label>
+    <label class="text-xs text-gray-500">Z nápadu
+      <select name="contentIdeaId" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-0.5 bg-white">
+        <option value="">—</option>
+        <% for (const i of ideas) { %><option value="<%= i.id %>"><%= i.title %></option><% } %>
+      </select>
+    </label>
+    <label class="text-xs text-gray-500">Šablóna
+      <select name="templateId" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-0.5 bg-white">
+        <option value="">—</option>
+        <% for (const t of templates) { %><option value="<%= t.id %>" <%= t.isDefault ? 'selected' : '' %>><%= t.name %></option><% } %>
+      </select>
+    </label>
+    <label class="text-xs text-gray-500">Cieľ
+      <select name="goal" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-0.5 bg-white">
+        <% for (const g of ['', 'Education','Trust building','Lead generation','Sales','FAQ','Myth busting','Client story','Common mistake','Market update','Personal brand','Engagement','Content series']) { %>
+          <option value="<%= g %>"><%= g || '—' %></option>
+        <% } %>
+      </select>
+    </label>
+    <label class="text-xs text-gray-500">Dĺžka
+      <select name="length" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-0.5 bg-white">
+        <% for (const l of ['', 'Short: 20–35 sekúnd','Medium: 45–70 sekúnd','Long: 90–180 sekúnd']) { %>
+          <option value="<%= l %>"><%= l || '—' %></option>
+        <% } %>
+      </select>
+    </label>
+    <label class="text-xs text-gray-500">Štýl
+      <select name="style" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-0.5 bg-white">
+        <% for (const s of ['', 'Friendly','Professional','Dynamic','Storytelling','Conversational','Expert','Empathetic','Humorous','Direct','Educational']) { %>
+          <option value="<%= s %>"><%= s || '—' %></option>
+        <% } %>
+      </select>
+    </label>
+    <label class="text-xs text-gray-500">Emócia
+      <select name="emotion" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-0.5 bg-white">
+        <% for (const e of ['', 'Calm','Energetic','Confident','Serious','Motivational','Curious','Empathetic','Urgent']) { %>
+          <option value="<%= e %>"><%= e || '—' %></option>
+        <% } %>
+      </select>
+    </label>
+    <label class="text-xs text-gray-500 md:col-span-2">CTA (voliteľné)
+      <input name="cta" maxlength="500" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-0.5">
+    </label>
+    <div class="md:col-span-3">
+      <button id="gen-submit" class="px-6 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">Vygenerovať 3 varianty</button>
+    </div>
+  </form>
+</div>
+
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <% if (scripts.length === 0) { %>
+    <p class="text-sm text-gray-400 p-6">Žiadne skripty.</p>
+  <% } else { %>
+  <table class="w-full text-sm">
+    <thead class="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
+      <tr>
+        <th class="text-left px-4 py-3">Skript</th>
+        <th class="text-left px-4 py-3 w-14">Ver.</th>
+        <th class="text-left px-4 py-3 hidden md:table-cell">Hook</th>
+        <th class="text-left px-4 py-3">Status</th>
+        <th class="text-left px-4 py-3 hidden md:table-cell">AI skóre</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      <% for (const s of scripts) { %>
+      <tr class="hover:bg-gray-50 cursor-pointer" onclick="location.href='/content-studio/scripts/<%= s.id %>'">
+        <td class="px-4 py-3 font-medium text-gray-900"><%= (s.strategy && s.strategy.workingTitle) || '(bez názvu)' %></td>
+        <td class="px-4 py-3"><span class="text-xs font-bold text-indigo-700"><%= s.versionName %></span></td>
+        <td class="px-4 py-3 hidden md:table-cell text-gray-600 truncate max-w-xs"><%= s.hook || '' %></td>
+        <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded-full <%= ['APPROVED','READY_FOR_VIDEO'].includes(s.status) ? 'bg-green-50 text-green-700' : s.status === 'REJECTED' ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-600' %>"><%= s.status %></span></td>
+        <td class="px-4 py-3 hidden md:table-cell text-gray-600"><%= s.reviewerScores ? s.reviewerScores.overall + '/10 (AI odhad)' : '—' %></td>
+      </tr>
+      <% } %>
+    </tbody>
+  </table>
+  <% } %>
+</div>
+
+<script>
+document.getElementById('gen-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('gen-submit');
+  btn.disabled = true; btn.textContent = 'Generujem 3 varianty...';
+  const f = new FormData(e.target);
+  const body = { topic: f.get('topic') };
+  for (const k of ['contentIdeaId','templateId','goal','length','style','emotion','cta']) {
+    if (f.get(k)) body[k] = f.get(k);
+  }
+  try {
+    const res = await fetch('/api/content-studio/scripts/generate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const scripts = await res.json();
+    location.href = '/content-studio/scripts/' + scripts[0].id;
+  } catch (err) {
+    alert('Generovanie zlyhalo: ' + err.message);
+    btn.disabled = false; btn.textContent = 'Vygenerovať 3 varianty';
+  }
+});
+</script>
+
+<%- include('../layouts/footer') %>

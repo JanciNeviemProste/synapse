@@ -17,6 +17,8 @@ import { InterviewService } from './services/interview.service';
 import { InspirationService } from './services/inspiration.service';
 import { KnowledgeService } from './services/knowledge.service';
 import { PillarsService } from './services/pillars.service';
+import { PlansService } from './services/plans.service';
+import { ScriptsService } from './services/scripts.service';
 import { TemplatesService } from './services/templates.service';
 import { VoiceService } from './services/voice.service';
 import { ContentStorageService } from './storage/content-storage.service';
@@ -43,6 +45,8 @@ import { ContentStorageService } from './storage/content-storage.service';
     MediaService,
     IntelligenceService,
     ContentDnaService,
+    PlansService,
+    ScriptsService,
   ],
   exports: [
     ContentProviderFactory,

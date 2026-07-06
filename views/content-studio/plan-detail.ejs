@@ -1,0 +1,84 @@
+<%- include('../layouts/header', { title: plan.name + ' | Content Studio', currentPath: '/content-studio' }) %>
+
+<div class="mb-6">
+  <a href="/content-studio/plans" class="text-sm text-indigo-600 hover:underline">← Plány</a>
+  <h1 class="text-2xl font-bold text-gray-900 mt-1"><%= plan.name %></h1>
+  <p class="text-sm text-gray-500 mt-1">
+    <%= new Date(plan.startDate).toLocaleDateString('sk-SK') %> – <%= new Date(plan.endDate).toLocaleDateString('sk-SK') %>
+    · <%= plan.status %> · <%= plan.items.length %> položiek
+  </p>
+</div>
+
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
+      <tr>
+        <th class="text-left px-4 py-3">Dátum</th>
+        <th class="text-left px-4 py-3">Video</th>
+        <th class="text-left px-4 py-3 hidden md:table-cell">Cieľ</th>
+        <th class="text-left px-4 py-3">Status</th>
+        <th class="text-right px-4 py-3">Akcie</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      <% for (const item of plan.items) { %>
+      <tr>
+        <td class="px-4 py-3">
+          <input type="date" class="item-date text-xs rounded border-gray-300 py-1" data-id="<%= item.id %>"
+            value="<%= new Date(item.scheduledDate).toISOString().slice(0,10) %>">
+        </td>
+        <td class="px-4 py-3">
+          <div class="font-medium text-gray-900"><%= item.workingTitle %></div>
+          <div class="text-xs text-gray-500">
+            <%= [item.length, item.style, item.emotion].filter(Boolean).join(' · ') %>
+          </div>
+          <% if (item.suggestedHook) { %><div class="text-xs text-gray-400 italic mt-0.5">„<%= item.suggestedHook %>"</div><% } %>
+        </td>
+        <td class="px-4 py-3 hidden md:table-cell text-gray-600"><%= item.goal || '—' %></td>
+        <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600"><%= item.status %></span></td>
+        <td class="px-4 py-3 text-right">
+          <button class="item-scripts text-indigo-600 hover:underline text-xs"
+            data-id="<%= item.id %>" data-topic="<%= item.topic || item.workingTitle %>"
+            data-goal="<%= item.goal || '' %>" data-length="<%= item.length || '' %>"
+            data-style="<%= item.style || '' %>" data-emotion="<%= item.emotion || '' %>"
+            data-cta="<%= item.cta || '' %>">Vygenerovať skripty</button>
+        </td>
+      </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<script>
+document.querySelectorAll('.item-date').forEach(i => i.addEventListener('change', async () => {
+  await fetch('/api/content-studio/plans/items/' + i.dataset.id, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scheduledDate: i.value }),
+  });
+}));
+
+document.querySelectorAll('.item-scripts').forEach(b => b.addEventListener('click', async () => {
+  b.textContent = 'Generujem (3 varianty)...';
+  b.disabled = true;
+  try {
+    const res = await fetch('/api/content-studio/scripts/generate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic: b.dataset.topic, contentPlanItemId: b.dataset.id,
+        goal: b.dataset.goal || undefined, length: b.dataset.length || undefined,
+        style: b.dataset.style || undefined, emotion: b.dataset.emotion || undefined,
+        cta: b.dataset.cta || undefined,
+      }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const scripts = await res.json();
+    location.href = '/content-studio/scripts/' + scripts[0].id;
+  } catch (err) {
+    alert('Generovanie zlyhalo: ' + err.message);
+    b.textContent = 'Vygenerovať skripty';
+    b.disabled = false;
+  }
+}));
+</script>
+
+<%- include('../layouts/footer') %>

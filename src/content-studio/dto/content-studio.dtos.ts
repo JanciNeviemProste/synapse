@@ -105,6 +105,53 @@ export class UpdatePillarDto {
   @IsOptional() @IsInt() sortOrder?: number;
 }
 
+export class GeneratePlanDto {
+  @IsString() @IsNotEmpty() startDate!: string;
+  @IsString() @IsNotEmpty() endDate!: string;
+  @IsInt() @Min(1) @Max(14) postsPerWeek!: number;
+  @IsOptional() @IsArray() @IsString({ each: true }) goals?: string[];
+  @IsOptional() @IsArray() @IsString({ each: true }) preferredDays?: string[];
+  @IsOptional() @IsArray() @IsString({ each: true }) preferredLengths?: string[];
+  @IsOptional() @IsArray() @IsString({ each: true }) preferredStyles?: string[];
+  @IsOptional() @IsString() @MaxLength(2000) campaignContext?: string;
+}
+
+export class UpdatePlanItemDto {
+  @IsOptional() @IsString() scheduledDate?: string;
+  @IsOptional() @IsString() @MaxLength(200) workingTitle?: string;
+  @IsOptional()
+  @IsIn(['IDEA', 'PLANNED', 'SCRIPT_DRAFT', 'WAITING_FOR_APPROVAL', 'APPROVED', 'REJECTED', 'READY_FOR_VIDEO', 'COMPLETED', 'ARCHIVED'])
+  status?: string;
+}
+
+export class GenerateScriptsDto {
+  @IsString() @IsNotEmpty() @MaxLength(500) topic!: string;
+  @IsOptional() @IsString() @MaxLength(10000) rawIdea?: string;
+  @IsOptional() @IsString() contentIdeaId?: string;
+  @IsOptional() @IsString() contentPlanItemId?: string;
+  @IsOptional() @IsString() templateId?: string;
+  @IsOptional() @IsString() @MaxLength(100) goal?: string;
+  @IsOptional() @IsString() @MaxLength(500) targetAudience?: string;
+  @IsOptional() @IsString() @MaxLength(100) length?: string;
+  @IsOptional() @IsString() @MaxLength(100) style?: string;
+  @IsOptional() @IsString() @MaxLength(100) emotion?: string;
+  @IsOptional() @IsString() @MaxLength(500) cta?: string;
+}
+
+export class UpdateScriptDto {
+  @IsOptional() @IsString() @MaxLength(2000) hook?: string;
+  @IsOptional() @IsString() @MaxLength(5000) setup?: string;
+  @IsOptional() @IsString() @MaxLength(10000) mainMessage?: string;
+  @IsOptional() @IsString() @MaxLength(5000) keyInsight?: string;
+  @IsOptional() @IsString() @MaxLength(2000) cta?: string;
+  @IsOptional() @IsString() @MaxLength(20000) spokenScript?: string;
+}
+
+export class ScriptStatusDto {
+  @IsIn(['DRAFT', 'GENERATED', 'UNDER_REVIEW', 'EDITED', 'APPROVED', 'REJECTED', 'READY_FOR_VIDEO', 'ARCHIVED'])
+  status!: string;
+}
+
 export class InspirationDto {
   @IsIn(['INSTAGRAM_PROFILE', 'INSTAGRAM_REEL', 'SCREENSHOT', 'VIDEO_UPLOAD', 'TRANSCRIPT', 'MANUAL_NOTE'])
   type!: 'INSTAGRAM_PROFILE' | 'INSTAGRAM_REEL' | 'SCREENSHOT' | 'VIDEO_UPLOAD' | 'TRANSCRIPT' | 'MANUAL_NOTE';

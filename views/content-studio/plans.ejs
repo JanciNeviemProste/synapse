@@ -1,0 +1,103 @@
+<%- include('../layouts/header', { title: 'Plány | Content Studio', currentPath: '/content-studio' }) %>
+
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-gray-900">Content plány</h1>
+  <p class="text-sm text-gray-500 mt-1">Týždenné a mesačné plánovanie Reels</p>
+</div>
+
+<%- include('_subnav', { subnavPath: '/content-studio/plans' }) %>
+
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-3">
+    <% if (plans.length === 0) { %>
+      <div class="bg-white rounded-xl border border-gray-200 p-6 text-sm text-gray-400">Žiadne plány — vygeneruj prvý vpravo.</div>
+    <% } %>
+    <% for (const p of plans) { %>
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+      <div class="flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <a href="/content-studio/plans/<%= p.id %>" class="font-semibold text-gray-900 hover:text-indigo-700"><%= p.name %></a>
+          <p class="text-xs text-gray-400 mt-0.5">
+            <%= new Date(p.startDate).toLocaleDateString('sk-SK') %> – <%= new Date(p.endDate).toLocaleDateString('sk-SK') %>
+            · <%= p.items.length %> položiek · <%= p.postsPerWeek %>/týždeň
+          </p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0 text-xs">
+          <select class="plan-status text-xs rounded border-gray-300 py-1" data-id="<%= p.id %>">
+            <% for (const s of ['DRAFT','ACTIVE','COMPLETED','ARCHIVED']) { %>
+              <option value="<%= s %>" <%= p.status === s ? 'selected' : '' %>><%= s %></option>
+            <% } %>
+          </select>
+          <button class="plan-delete text-red-500 hover:text-red-700" data-id="<%= p.id %>">Zmazať</button>
+        </div>
+      </div>
+    </div>
+    <% } %>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-5 h-fit">
+    <h2 class="font-semibold text-gray-900 mb-1">Nový plán (AI)</h2>
+    <p class="text-xs text-gray-400 mb-3">Použije Brand DNA, aktívne piliere a Knowledge Base.</p>
+    <form id="plan-form" class="space-y-3">
+      <div class="grid grid-cols-2 gap-2">
+        <label class="text-xs text-gray-500">Od
+          <input name="startDate" type="date" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-0.5">
+        </label>
+        <label class="text-xs text-gray-500">Do
+          <input name="endDate" type="date" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-0.5">
+        </label>
+      </div>
+      <label class="text-xs text-gray-500 block">Postov týždenne
+        <input name="postsPerWeek" type="number" min="1" max="14" value="3" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-0.5">
+      </label>
+      <label class="text-xs text-gray-500 block">Ciele (čiarkou)
+        <input name="goals" placeholder="Education, Trust building, Lead generation" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-0.5">
+      </label>
+      <label class="text-xs text-gray-500 block">Kampaňový kontext (voliteľné)
+        <textarea name="campaignContext" rows="2" maxlength="2000" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-0.5"></textarea>
+      </label>
+      <button id="plan-submit" class="w-full px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">Vygenerovať plán</button>
+    </form>
+  </div>
+</div>
+
+<script>
+document.getElementById('plan-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('plan-submit');
+  btn.disabled = true; btn.textContent = 'Generujem...';
+  const f = new FormData(e.target);
+  try {
+    const res = await fetch('/api/content-studio/plans/generate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        startDate: f.get('startDate'), endDate: f.get('endDate'),
+        postsPerWeek: parseInt(f.get('postsPerWeek'), 10),
+        goals: (f.get('goals') || '').split(',').map(s => s.trim()).filter(Boolean),
+        campaignContext: f.get('campaignContext') || undefined,
+      }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const plan = await res.json();
+    location.href = '/content-studio/plans/' + plan.id;
+  } catch (err) {
+    alert('Generovanie zlyhalo: ' + err.message);
+    btn.disabled = false; btn.textContent = 'Vygenerovať plán';
+  }
+});
+
+document.querySelectorAll('.plan-status').forEach(s => s.addEventListener('change', async () => {
+  await fetch('/api/content-studio/plans/' + s.dataset.id + '/status', {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: s.value }),
+  });
+}));
+
+document.querySelectorAll('.plan-delete').forEach(b => b.addEventListener('click', async () => {
+  if (!confirm('Zmazať plán vrátane položiek?')) return;
+  const res = await fetch('/api/content-studio/plans/' + b.dataset.id, { method: 'DELETE' });
+  if (res.ok) location.reload();
+}));
+</script>
+
+<%- include('../layouts/footer') %>

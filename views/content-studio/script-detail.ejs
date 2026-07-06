@@ -1,0 +1,226 @@
+<%- include('../layouts/header', { title: 'Skript | Content Studio', currentPath: '/content-studio' }) %>
+
+<% const strategy = script.strategy || {}; %>
+
+<div class="mb-6 flex items-center justify-between gap-3">
+  <div class="min-w-0">
+    <a href="/content-studio/scripts" class="text-sm text-indigo-600 hover:underline">← Skripty</a>
+    <h1 class="text-2xl font-bold text-gray-900 mt-1 truncate"><%= strategy.workingTitle || 'Skript' %></h1>
+    <p class="text-sm text-gray-500 mt-1">Variant <%= script.versionName %> · <%= script.status %><%= script.approvedAt ? ' · schválené ' + new Date(script.approvedAt).toLocaleString('sk-SK') : '' %></p>
+  </div>
+  <div class="flex items-center gap-2 shrink-0">
+    <% if (['GENERATED','UNDER_REVIEW','EDITED'].includes(script.status)) { %>
+      <button class="status-btn px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700" data-status="APPROVED">Schváliť</button>
+      <button class="status-btn px-4 py-2 bg-white border border-red-300 text-red-600 text-sm font-medium rounded-lg hover:bg-red-50" data-status="REJECTED">Zamietnuť</button>
+    <% } %>
+    <% if (['APPROVED','READY_FOR_VIDEO'].includes(script.status)) { %>
+      <button id="handoff-btn" class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">Send to Video Studio</button>
+    <% } %>
+  </div>
+</div>
+
+<!-- Variant switcher -->
+<% if (siblings.length) { %>
+<div class="flex items-center gap-2 mb-6">
+  <span class="text-xs text-gray-400">Porovnaj varianty:</span>
+  <span class="px-3 py-1 rounded-lg text-sm font-bold bg-indigo-600 text-white"><%= script.versionName %></span>
+  <% for (const s of siblings) { %>
+    <a href="/content-studio/scripts/<%= s.id %>" class="px-3 py-1 rounded-lg text-sm font-bold bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"><%= s.versionName %></a>
+  <% } %>
+</div>
+<% } %>
+
+<div class="grid lg:grid-cols-2 gap-6">
+  <div class="space-y-6">
+    <!-- Editable script -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-3">Skript (editovateľný)</h2>
+      <form id="edit-form" class="space-y-3">
+        <% const fields = [['hook','Hook',2],['setup','Setup',2],['mainMessage','Hlavná myšlienka',3],['keyInsight','Kľúčový insight',2],['cta','CTA',2],['spokenScript','Kompletný hovorený skript',8]]; %>
+        <% for (const [name, label, rows] of fields) { %>
+        <label class="text-xs text-gray-500 block"><%= label %>
+          <textarea name="<%= name %>" rows="<%= rows %>" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-0.5"><%= script[name] || '' %></textarea>
+        </label>
+        <% } %>
+        <button class="px-5 py-2 bg-white border border-indigo-300 text-indigo-700 text-sm font-semibold rounded-lg hover:bg-indigo-50">Uložiť úpravy</button>
+        <span id="edit-saved" class="hidden text-sm text-green-600 ml-2">Uložené ✓</span>
+      </form>
+    </div>
+
+    <!-- Instagram assets -->
+    <% const ig = script.instagramAssets; if (ig) { %>
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-3">Instagram assets</h2>
+      <dl class="space-y-2 text-sm">
+        <% const igRows = [['Caption', ig.caption], ['Krátky caption', ig.shortCaption], ['Thumbnail text', ig.thumbnailText], ['Prvý komentár', ig.firstComment], ['CTA text', ig.ctaText], ['Hashtagy', (ig.hashtags||[]).map(h => '#'+h).join(' ')], ['Alternatívne hooky', (ig.alternativeHooks||[]).join(' · ')], ['Alternatívne titulky', (ig.alternativeTitles||[]).join(' · ')]]; %>
+        <% for (const [k, v] of igRows) { if (v) { %>
+        <div>
+          <dt class="text-xs text-gray-400"><%= k %></dt>
+          <dd class="text-gray-800 flex items-start gap-2"><span class="flex-1"><%= v %></span>
+            <button type="button" class="copy-btn text-indigo-600 text-xs hover:underline shrink-0" data-copy="<%= v %>">Kopírovať</button>
+          </dd>
+        </div>
+        <% } } %>
+      </dl>
+    </div>
+    <% } %>
+  </div>
+
+  <div class="space-y-6">
+    <!-- Strategy -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-2">Stratégia</h2>
+      <dl class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+        <% const stRows = [['Cieľ', strategy.goal],['Publikum', strategy.targetAudience],['Pilier', strategy.contentPillar],['Dĺžka', strategy.recommendedLength],['Štýl', strategy.recommendedStyle],['Emócia', strategy.recommendedEmotion],['Šablóna', strategy.template],['Uhol', strategy.contentAngle],['Prečo tento uhol', strategy.angleReason]]; %>
+        <% for (const [k, v] of stRows) { if (v) { %>
+          <dt class="text-gray-400"><%= k %></dt><dd class="text-gray-800"><%= v %></dd>
+        <% } } %>
+      </dl>
+    </div>
+
+    <!-- AI review -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-lg font-semibold text-gray-900">AI review <span class="text-[10px] font-normal px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 align-middle">AI odhad</span></h2>
+        <div class="flex gap-2">
+          <button id="review-btn" class="px-3 py-1.5 bg-white border border-indigo-300 text-indigo-700 text-xs font-medium rounded-lg hover:bg-indigo-50">Spustiť review</button>
+          <button id="compliance-btn" class="px-3 py-1.5 bg-white border border-amber-300 text-amber-700 text-xs font-medium rounded-lg hover:bg-amber-50">Compliance check</button>
+        </div>
+      </div>
+      <% if (script.reviewerScores) { %>
+      <div class="grid grid-cols-4 gap-2 mb-3">
+        <% for (const [k, v] of Object.entries(script.reviewerScores)) { %>
+        <div class="text-center border border-gray-100 rounded-lg py-1.5">
+          <div class="text-base font-bold text-gray-900"><%= v %></div>
+          <div class="text-[9px] text-gray-400"><%= k %></div>
+        </div>
+        <% } %>
+      </div>
+      <% } %>
+      <% const fb = script.reviewerFeedback; if (fb) { %>
+      <div class="space-y-2 text-xs">
+        <% const fbRows = [['Silné stránky', fb.strengths],['Slabé stránky', fb.weaknesses],['Návrhy', fb.suggestedImprovements],['Nepodložené tvrdenia', fb.unsupportedClaims],['Compliance varovania', fb.complianceWarnings]]; %>
+        <% for (const [k, arr] of fbRows) { if (arr && arr.length) { %>
+        <div><span class="font-semibold text-gray-500 uppercase text-[10px]"><%= k %></span>
+          <% for (const item of arr) { %><div class="text-gray-800">• <%= item %></div><% } %>
+        </div>
+        <% } } %>
+        <% if (fb.improvedHook) { %><div><span class="font-semibold text-gray-500 uppercase text-[10px]">Vylepšený hook</span><div class="text-gray-800"><%= fb.improvedHook %></div></div><% } %>
+        <% if (fb.improvedCta) { %><div><span class="font-semibold text-gray-500 uppercase text-[10px]">Vylepšené CTA</span><div class="text-gray-800"><%= fb.improvedCta %></div></div><% } %>
+      </div>
+      <% } else if (!script.reviewerScores) { %>
+        <p class="text-sm text-gray-400">Review zatiaľ nebolo spustené.</p>
+      <% } %>
+    </div>
+
+    <!-- Safety -->
+    <% const safety = script.safety; if (safety) { %>
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-2">Bezpečnosť & compliance</h2>
+      <div class="space-y-2 text-xs">
+        <% const sfRows = [['Faktická neistota', safety.factualUncertainty],['Compliance riziká', safety.complianceRisks],['Citlivé údaje', safety.sensitiveInfoWarnings],['Overiť tvrdenia', safety.claimsToVerify],['Zdroje', safety.sourceReferences]]; %>
+        <% for (const [k, arr] of sfRows) { if (arr && arr.length) { %>
+        <div><span class="font-semibold text-gray-500 uppercase text-[10px]"><%= k %></span>
+          <% for (const item of arr) { %><div class="text-gray-800">• <%= item %></div><% } %>
+        </div>
+        <% } } %>
+        <% if (safety.recommendedDisclaimer) { %>
+        <div><span class="font-semibold text-gray-500 uppercase text-[10px]">Odporúčaný disclaimer</span>
+          <div class="text-gray-800"><%= safety.recommendedDisclaimer %></div></div>
+        <% } %>
+        <% if (safety.complianceCheck) { %>
+        <div class="border-t border-gray-100 pt-2 mt-2">
+          <span class="font-semibold text-gray-500 uppercase text-[10px]">Compliance check</span>
+          <div class="text-gray-800">Riziko: <span class="font-medium <%= safety.complianceCheck.riskLevel === 'high' ? 'text-red-600' : safety.complianceCheck.riskLevel === 'medium' ? 'text-amber-600' : 'text-green-700' %>"><%= safety.complianceCheck.riskLevel %></span></div>
+          <% for (const f of (safety.complianceCheck.findings || [])) { %><div class="text-gray-800">• <%= f %></div><% } %>
+          <% for (const d of (safety.complianceCheck.requiredDisclaimers || [])) { %><div class="text-gray-600">Disclaimer: <%= d %></div><% } %>
+        </div>
+        <% } %>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Production plan -->
+    <% const pp = script.productionPlan; if (pp) { %>
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-2">Production plán (~<%= pp.estimatedDurationSeconds %>s)</h2>
+      <% for (const [i, scene] of (pp.scenes || []).entries()) { %>
+      <div class="border border-gray-100 rounded-lg p-2.5 mb-2 text-xs">
+        <div class="font-medium text-gray-900">Scéna <%= i + 1 %>: <%= scene.description %></div>
+        <% if (scene.onScreenText) { %><div class="text-gray-600">Text na obraze: <%= scene.onScreenText %></div><% } %>
+        <% if (scene.brollSuggestion) { %><div class="text-gray-600">B-roll: <%= scene.brollSuggestion %></div><% } %>
+        <% if (scene.deliveryNote) { %><div class="text-gray-500 italic"><%= scene.deliveryNote %></div><% } %>
+      </div>
+      <% } %>
+      <div class="text-xs text-gray-600 space-y-0.5">
+        <% if (pp.pacingNotes) { %><div>Tempo: <%= pp.pacingNotes %></div><% } %>
+        <% if (pp.pauses && pp.pauses.length) { %><div>Pauzy: <%= pp.pauses.join(', ') %></div><% } %>
+        <% if (pp.emphasizedWords && pp.emphasizedWords.length) { %><div>Dôraz: <%= pp.emphasizedWords.join(', ') %></div><% } %>
+      </div>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<div id="handoff-result" class="hidden mt-6 bg-white rounded-xl border border-indigo-200 p-6"></div>
+
+<script>
+const SCRIPT_ID = '<%= script.id %>';
+
+document.getElementById('edit-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const body = {};
+  for (const k of ['hook','setup','mainMessage','keyInsight','cta','spokenScript']) body[k] = f.get(k) || '';
+  const res = await fetch('/api/content-studio/scripts/' + SCRIPT_ID, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  if (res.ok) {
+    const saved = document.getElementById('edit-saved');
+    saved.classList.remove('hidden');
+    setTimeout(() => saved.classList.add('hidden'), 3000);
+  } else alert('Uloženie zlyhalo');
+});
+
+document.querySelectorAll('.status-btn').forEach(b => b.addEventListener('click', async () => {
+  const res = await fetch('/api/content-studio/scripts/' + SCRIPT_ID + '/status', {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: b.dataset.status }),
+  });
+  if (res.ok) location.reload(); else alert((await res.json()).message || 'Zmena statusu zlyhala');
+}));
+
+document.getElementById('review-btn').addEventListener('click', async (e) => {
+  e.target.disabled = true; e.target.textContent = 'Hodnotím...';
+  const res = await fetch('/api/content-studio/scripts/' + SCRIPT_ID + '/review', { method: 'POST' });
+  if (res.ok) location.reload(); else { alert('Review zlyhalo'); e.target.disabled = false; e.target.textContent = 'Spustiť review'; }
+});
+
+document.getElementById('compliance-btn').addEventListener('click', async (e) => {
+  e.target.disabled = true; e.target.textContent = 'Kontrolujem...';
+  const res = await fetch('/api/content-studio/scripts/' + SCRIPT_ID + '/compliance', { method: 'POST' });
+  if (res.ok) location.reload(); else { alert('Kontrola zlyhala'); e.target.disabled = false; e.target.textContent = 'Compliance check'; }
+});
+
+document.getElementById('handoff-btn')?.addEventListener('click', async () => {
+  const res = await fetch('/api/content-studio/scripts/' + SCRIPT_ID + '/handoff');
+  const box = document.getElementById('handoff-result');
+  box.classList.remove('hidden');
+  if (!res.ok) { box.innerHTML = '<p class="text-sm text-red-600">Handoff zlyhal.</p>'; return; }
+  const payload = await res.json();
+  const json = JSON.stringify(payload, null, 2);
+  box.innerHTML = '<h2 class="text-lg font-semibold text-gray-900 mb-2">Video Studio handoff package</h2>' +
+    '<p class="text-xs text-gray-400 mb-2">Video Studio zatiaľ neexistuje — package si stiahni/skopíruj. Generovanie videa sa nespúšťa automaticky.</p>' +
+    '<pre class="text-xs bg-gray-50 rounded-lg p-3 overflow-x-auto max-h-80">' + json.replace(/</g, '&lt;') + '</pre>' +
+    '<button id="handoff-copy" class="mt-2 px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg">Kopírovať JSON</button>';
+  document.getElementById('handoff-copy').addEventListener('click', () => navigator.clipboard.writeText(json));
+});
+
+document.querySelectorAll('.copy-btn').forEach(b => b.addEventListener('click', () => {
+  navigator.clipboard.writeText(b.dataset.copy);
+  b.textContent = 'Skopírované ✓';
+  setTimeout(() => b.textContent = 'Kopírovať', 2000);
+}));
+</script>
+
+<%- include('../layouts/footer') %>

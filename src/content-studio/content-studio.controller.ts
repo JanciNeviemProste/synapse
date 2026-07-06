@@ -6,6 +6,8 @@ import { ContentDnaService } from './intelligence/content-dna.service';
 import { IntelligenceService } from './intelligence/intelligence.service';
 import { BrandProfileService } from './services/brand-profile.service';
 import { IdeasService } from './services/ideas.service';
+import { PlansService } from './services/plans.service';
+import { ScriptsService } from './services/scripts.service';
 import { InspirationService } from './services/inspiration.service';
 import { KnowledgeService } from './services/knowledge.service';
 import { PillarsService } from './services/pillars.service';
@@ -26,6 +28,8 @@ export class ContentStudioController {
     private readonly knowledgeService: KnowledgeService,
     private readonly intelligenceService: IntelligenceService,
     private readonly contentDnaService: ContentDnaService,
+    private readonly plansService: PlansService,
+    private readonly scriptsService: ScriptsService,
   ) {}
 
   private render(res: Response, view: string, data: Record<string, unknown>): void {
@@ -166,6 +170,53 @@ export class ContentStudioController {
       res.type(stream.mime).send(stream.buffer);
     } catch {
       res.status(404).send('Video not found');
+    }
+  }
+
+  @Get('plans')
+  async plans(@Res() res: Response): Promise<void> {
+    const [plans, pillars, templates] = await Promise.all([
+      this.plansService.list(),
+      this.pillarsService.list(),
+      this.templatesService.list(),
+    ]);
+    this.render(res, 'plans', { plans, pillars, templates });
+  }
+
+  @Get('plans/:id')
+  async planDetail(@Param('id', ParseUUIDPipe) id: string, @Res() res: Response): Promise<void> {
+    try {
+      const [plan, templates] = await Promise.all([
+        this.plansService.get(id),
+        this.templatesService.list(),
+      ]);
+      this.render(res, 'plan-detail', { plan, templates });
+    } catch {
+      res.status(404).send('Plan not found');
+    }
+  }
+
+  @Get('scripts')
+  async scripts(@Res() res: Response): Promise<void> {
+    const [scripts, templates, ideas] = await Promise.all([
+      this.scriptsService.list(),
+      this.templatesService.list(),
+      this.ideasService.list(),
+    ]);
+    this.render(res, 'scripts', {
+      scripts,
+      templates,
+      ideas: ideas.filter((i) => ['NEW', 'APPROVED'].includes(i.status)),
+    });
+  }
+
+  @Get('scripts/:id')
+  async scriptDetail(@Param('id', ParseUUIDPipe) id: string, @Res() res: Response): Promise<void> {
+    try {
+      const { script, siblings } = await this.scriptsService.getWithSiblings(id);
+      this.render(res, 'script-detail', { script, siblings });
+    } catch {
+      res.status(404).send('Script not found');
     }
   }
 
