@@ -22,7 +22,7 @@ describe('MockContentProvider produces schema-valid outputs', () => {
 
   it('extractIdeas', async () => {
     const out = await provider.extractIdeas({
-      rawText: 'Klient mal tri poistky bez krytia príjmu.',
+      rawText: 'Zákazník nevedel, ktorý z mojich balíkov si vybrať.',
       sourceType: 'text_note',
     });
     expect(() => extractedIdeasSchema.parse(out)).not.toThrow();
@@ -32,10 +32,10 @@ describe('MockContentProvider produces schema-valid outputs', () => {
   it('createContentPillars respects existing pillars', async () => {
     const out = await provider.createContentPillars({
       existingIdeas: [],
-      existingPillars: ['Hypotéky'],
+      existingPillars: ['Tipy a rady'],
     });
     expect(() => contentPillarsSchema.parse(out)).not.toThrow();
-    expect(out.pillars.map((p) => p.name)).not.toContain('Hypotéky');
+    expect(out.pillars.map((p) => p.name)).not.toContain('Tipy a rady');
   });
 
   it('createContentPlan generates items inside the date range', async () => {
@@ -60,7 +60,7 @@ describe('MockContentProvider produces schema-valid outputs', () => {
   });
 
   it('generateScripts returns exactly variants A, B, C with full §17 output', async () => {
-    const out = await provider.generateScripts({ topic: 'poistenie príjmu' });
+    const out = await provider.generateScripts({ topic: 'ako si vybrať službu' });
     expect(() => generatedScriptsSchema.parse(out)).not.toThrow();
     expect(out.variants.map((v) => v.versionName)).toEqual(['A', 'B', 'C']);
     for (const v of out.variants) {
@@ -87,7 +87,7 @@ describe('MockContentProvider produces schema-valid outputs', () => {
     expect(risky.riskLevel).toBe('high');
 
     const safe = await provider.checkContent({
-      content: 'Tri veci, ktoré si skontroluj v poistke.',
+      content: 'Tri veci, ktoré si over pred nákupom.',
     });
     expect(safe.riskLevel).toBe('low');
   });

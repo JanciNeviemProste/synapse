@@ -208,6 +208,7 @@ export class ScriptsService {
       content: [script.hook, script.spokenScript, script.cta].filter(Boolean).join('\n'),
       contentCategory: (script.strategy as { contentPillar?: string } | null)?.contentPillar,
       complianceNotes: brand?.complianceNotes,
+      industry: brand?.industry,
     });
     const safety = (script.safety as Record<string, unknown> | null) ?? {};
     return this.prisma.reelScript.update({

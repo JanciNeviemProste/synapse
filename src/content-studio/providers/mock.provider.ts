@@ -48,42 +48,42 @@ export class MockContentProvider
     RealtimeVoiceProvider
 {
   async extractIdeas(input: ContentStrategyInput): Promise<ExtractedIdeas> {
-    const topic = input.rawText.slice(0, 60) || 'finančné chyby klientov';
+    const topic = input.rawText.slice(0, 60) || 'tvoja téma';
     return {
       mainTopic: `[MOCK] ${topic}`,
-      clientProblem: 'Klient má tri poistky, ale žiadna nekryje výpadok príjmu.',
-      keyLesson: 'Počet zmlúv nie je to isté ako reálne krytie rizika.',
-      openQuestions: ['Koľko klient platí mesačne?', 'Kto mu zmluvy nastavil?'],
+      clientProblem: 'Zákazník nevie, ako si vybrať medzi možnosťami, ktoré ponúkaš.',
+      keyLesson: 'Konkrétny príklad z praxe presvedčí viac než všeobecné tvrdenie.',
+      openQuestions: ['Kto je typický zákazník?', 'Aký výsledok očakáva?'],
       ideas: [
         {
-          title: '3 poistky a aj tak bez krytia',
-          description: 'Príbeh klienta, ktorý platil tri poistky zbytočne.',
-          keyMessage: 'Poistka bez analýzy potrieb je len výdavok.',
-          suggestedGoal: 'Trust building',
-          suggestedHook: 'Platil 87 € mesačne za tri poistky. Kryli ho na... nič.',
-          suggestedCta: 'Napíš mi „AUDIT" a pozriem sa na tvoje zmluvy.',
-          suggestedFormats: ['Príbeh klienta', 'Mýtus vs. realita'],
-          targetAudience: 'Ľudia 30–45 s existujúcimi poistkami',
-        },
-        {
-          title: 'Najčastejšia chyba pri poistení príjmu',
-          description: 'Edukačné video o krytí výpadku príjmu.',
-          keyMessage: 'Najprv kryť príjem, potom majetok.',
+          title: 'Najčastejšia chyba, ktorú vidím u zákazníkov',
+          description: 'Edukačné video o častej chybe v tvojom obore a ako sa jej vyhnúť.',
+          keyMessage: 'Malá zmena prístupu ušetrí zákazníkovi čas aj peniaze.',
           suggestedGoal: 'Education',
-          suggestedHook: 'Toto ti poisťovák pri podpise nepovedal.',
-          suggestedCta: 'Ulož si to, kým to nebudeš potrebovať.',
-          suggestedFormats: ['Jedna rada za 30 sekúnd'],
-          targetAudience: 'Živnostníci a rodiny s hypotékou',
+          suggestedHook: 'Túto chybu robí 8 z 10 ľudí a ani o nej nevedia.',
+          suggestedCta: 'Ulož si to, kým to budeš potrebovať.',
+          suggestedFormats: ['3 najčastejšie chyby', 'Jedna rada za 30 sekúnd'],
+          targetAudience: 'Tvoji potenciálni zákazníci',
         },
         {
-          title: 'Ako si skontrolovať poistku za 5 minút',
-          description: 'Krok za krokom kontrola vlastnej zmluvy.',
-          keyMessage: 'Tri veci, ktoré si vieš skontrolovať sám.',
+          title: 'Príbeh spokojného zákazníka',
+          description: 'Anonymizovaný príbeh: východisková situácia → čo si urobil → výsledok.',
+          keyMessage: 'Ukáž reálny výsledok, nie sľuby.',
+          suggestedGoal: 'Trust building',
+          suggestedHook: 'Prišiel za mnou s problémom, ktorý poznáš aj ty.',
+          suggestedCta: 'Chceš podobný výsledok? Napíš mi.',
+          suggestedFormats: ['Príbeh klienta', 'Mini prípadová štúdia'],
+          targetAudience: 'Ľudia zvažujúci tvoju službu',
+        },
+        {
+          title: 'Rýchly tip za 30 sekúnd',
+          description: 'Jedna okamžite použiteľná rada z tvojej praxe.',
+          keyMessage: 'Daj hodnotu zadarmo — dôvera príde sama.',
           suggestedGoal: 'Lead generation',
-          suggestedHook: 'Vytiahni svoju poistku. Ideme na to spolu.',
-          suggestedCta: 'Nevieš sa v tom vyznať? Napíš mi.',
-          suggestedFormats: ['Krok za krokom'],
-          targetAudience: 'Všetci s uzavretou životnou poistkou',
+          suggestedHook: 'Jedna vec, ktorú sprav ešte dnes.',
+          suggestedCta: 'Sleduj pre viac praktických tipov.',
+          suggestedFormats: ['Jedna rada za 30 sekúnd'],
+          targetAudience: 'Všetci, ktorých téma zaujíma',
         },
       ],
     };
@@ -92,11 +92,11 @@ export class MockContentProvider
   async createContentPillars(input: ContentPillarInput): Promise<ContentPillarsOutput> {
     const existing = new Set(input.existingPillars.map((p) => p.toLowerCase()));
     const all = [
-      { name: 'Životné poistenie', description: '[MOCK] Krytie rizík a príjmu', priority: 8, targetFrequency: '1x týždenne', complianceNotes: '' },
-      { name: 'Hypotéky', description: '[MOCK] Financovanie bývania', priority: 7, targetFrequency: '1x týždenne', complianceNotes: '' },
-      { name: 'Finančné chyby', description: '[MOCK] Chyby z praxe a ako sa im vyhnúť', priority: 9, targetFrequency: '2x týždenne', complianceNotes: '' },
-      { name: 'Príbehy z praxe', description: '[MOCK] Anonymizované príbehy klientov', priority: 8, targetFrequency: '1x týždenne', complianceNotes: 'Anonymizovať údaje klientov' },
-      { name: 'Budovanie dôvery', description: '[MOCK] Osobná značka a zákulisie', priority: 6, targetFrequency: '1x za 2 týždne', complianceNotes: '' },
+      { name: 'Tipy a rady', description: '[MOCK] Praktické rady z tvojho oboru', priority: 9, targetFrequency: '2x týždenne', complianceNotes: '' },
+      { name: 'Príbehy zákazníkov', description: '[MOCK] Anonymizované príbehy z praxe', priority: 8, targetFrequency: '1x týždenne', complianceNotes: 'Anonymizovať údaje zákazníkov' },
+      { name: 'Za zákulisím', description: '[MOCK] Ako to u teba funguje, osobná značka', priority: 6, targetFrequency: '1x za 2 týždne', complianceNotes: '' },
+      { name: 'Časté otázky', description: '[MOCK] Odpovede na opakujúce sa otázky', priority: 7, targetFrequency: '1x týždenne', complianceNotes: '' },
+      { name: 'Novinky a inšpirácia', description: '[MOCK] Novinky v obore a inšpiratívny obsah', priority: 5, targetFrequency: '1x za 2 týždne', complianceNotes: '' },
     ];
     return { pillars: all.filter((p) => !existing.has(p.name.toLowerCase())) };
   }
@@ -111,7 +111,7 @@ export class MockContentProvider
     const total = Math.max(1, Math.round((days / 7) * input.postsPerWeek));
     const pillars = input.pillars.length
       ? input.pillars
-      : ['Finančné chyby', 'Príbehy z praxe', 'Životné poistenie'];
+      : ['Tipy a rady', 'Príbehy zákazníkov', 'Časté otázky'];
     const goals = input.goals.length
       ? input.goals
       : ['Education', 'Trust building', 'Lead generation'];
@@ -124,13 +124,13 @@ export class MockContentProvider
         topic: pillars[i % pillars.length],
         pillar: pillars[i % pillars.length],
         goal: goals[i % goals.length],
-        targetAudience: 'Ľudia 30–45 riešiaci financie',
+        targetAudience: 'Tvoji potenciálni zákazníci',
         template: 'Jedna rada za 30 sekúnd',
         length: 'Short: 20–35 sekúnd',
         style: 'Conversational',
         emotion: 'Confident',
-        suggestedHook: 'Toto ti nikto pri podpise nepovie.',
-        cta: 'Sleduj pre viac praktických rád.',
+        suggestedHook: 'Toto ti o tejto téme nikto nepovie.',
+        cta: 'Sleduj pre viac praktických tipov.',
       };
     });
 
@@ -149,11 +149,11 @@ export class MockContentProvider
       .ideas;
     return {
       summary: `[MOCK] Brief z rozhovoru (${transcript.length} znakov prepisu).`,
-      keyThoughts: ['Klienti podceňujú krytie príjmu', 'Príbehy fungujú lepšie ako poučky'],
+      keyThoughts: ['Zákazníci ocenia konkrétne príklady', 'Príbehy fungujú lepšie ako poučky'],
       ideas,
-      suggestedPillars: ['Finančné chyby', 'Príbehy z praxe'],
+      suggestedPillars: ['Tipy a rady', 'Príbehy zákazníkov'],
       missingInformation: ['Konkrétne čísla pre príklad'],
-      warnings: ['Skontrolovať anonymizáciu klienta'],
+      warnings: ['Skontrolovať anonymizáciu zákazníka'],
       uncertainty: ['Cieľová skupina odhadnutá z kontextu'],
     };
   }
@@ -202,14 +202,14 @@ export class MockContentProvider
   }
 
   async generateScripts(input: ScriptGenerationInput): Promise<GeneratedScripts> {
-    const topic = input.topic || 'finančné chyby';
+    const topic = input.topic || 'tvoja téma';
     const mk = (versionName: string, hook: string, angle: string) => ({
       versionName,
       strategy: {
         workingTitle: `[MOCK ${versionName}] ${topic}`,
         goal: input.goal || 'Education',
-        targetAudience: input.targetAudience || 'Ľudia 30–45',
-        contentPillar: 'Finančné chyby',
+        targetAudience: input.targetAudience || 'Tvoji potenciálni zákazníci',
+        contentPillar: 'Tipy a rady',
         recommendedLength: input.length || 'Short: 20–35 sekúnd',
         recommendedStyle: input.style || 'Conversational',
         recommendedEmotion: input.emotion || 'Confident',
@@ -218,36 +218,36 @@ export class MockContentProvider
         angleReason: 'Mock zdôvodnenie uhla pohľadu.',
       },
       hook,
-      setup: 'Minulý týždeň mi klient ukázal svoje zmluvy.',
-      mainMessage: `Hlavná myšlienka k téme „${topic}": dôležité je krytie, nie počet zmlúv.`,
-      keyInsight: 'Analýza potrieb pred podpisom šetrí tisíce eur.',
-      cta: input.cta || 'Sleduj pre viac praktických rád.',
-      spokenScript: `${hook} Minulý týždeň mi klient ukázal tri poistky. Platil 87 eur mesačne. A keď sme si prešli krytie? Výpadok príjmu — nula. Presne to, čo živí jeho rodinu, nemal kryté. ${input.cta || 'Ak si nie si istý svojou zmluvou, napíš mi.'}`,
+      setup: 'Minulý týždeň sa ma na to spýtal jeden zákazník.',
+      mainMessage: `Hlavná myšlienka k téme „${topic}": konkrétny príklad povie viac než teória.`,
+      keyInsight: 'Keď ukážeš reálny výsledok, dôvera príde sama.',
+      cta: input.cta || 'Sleduj pre viac praktických tipov.',
+      spokenScript: `${hook} Minulý týždeň sa ma na to spýtal zákazník. Ukázal som mu jednoduchý postup a za pár minút mal jasno. Presne toto trápi väčšinu ľudí — a pritom je to riešiteľné. ${input.cta || 'Ak riešiš to isté, napíš mi.'}`,
       productionPlan: {
         estimatedDurationSeconds: 30,
         scenes: [
-          { description: 'Talking head, detail na tvár', onScreenText: hook, brollSuggestion: 'Detail zmlúv na stole', deliveryNote: 'Pomaly, s pauzou po hooku' },
-          { description: 'Talking head, mierny zoom', onScreenText: '87 € mesačne', brollSuggestion: '', deliveryNote: 'Zrýchliť tempo' },
+          { description: 'Talking head, detail na tvár', onScreenText: hook, brollSuggestion: 'Detail na tvoju prácu/produkt', deliveryNote: 'Pomaly, s pauzou po hooku' },
+          { description: 'Talking head, mierny zoom', onScreenText: 'Krok za krokom', brollSuggestion: '', deliveryNote: 'Zrýchliť tempo' },
         ],
         pacingNotes: 'Strih každé 2–3 sekundy.',
         pauses: ['po hooku', 'pred CTA'],
-        emphasizedWords: ['nula', 'krytie'],
+        emphasizedWords: ['jednoducho', 'výsledok'],
       },
       instagramAssets: {
-        caption: `[MOCK] ${topic} — na čo si dať pozor. #financie`,
-        shortCaption: '[MOCK] Toto si skontroluj vo svojej poistke.',
-        thumbnailText: '3 poistky, 0 krytia',
-        firstComment: 'Aké máš skúsenosti s poistkami? 👇',
-        ctaText: input.cta || 'Napíš mi „AUDIT".',
-        hashtags: ['financie', 'poistenie', 'slovensko'],
-        alternativeHooks: ['Toto ti poisťovák nepovie.', 'Platíš za poistku, ktorá ťa nekryje?'],
-        alternativeTitles: ['Poistka, ktorá nekryje nič', 'Audit poistiek za 30 sekúnd'],
+        caption: `[MOCK] ${topic} — na čo si dať pozor.`,
+        shortCaption: '[MOCK] Toto si vyskúšaj ešte dnes.',
+        thumbnailText: 'Rýchly tip',
+        firstComment: 'Aké máš s tým skúsenosti? 👇',
+        ctaText: input.cta || 'Napíš mi do správ.',
+        hashtags: ['tipy', 'obsah', 'slovensko'],
+        alternativeHooks: ['Toto ti o tejto téme nikto nepovie.', 'Robíš to aj ty takto?'],
+        alternativeTitles: ['Rýchly tip za 30 sekúnd', 'Najčastejšia chyba v obore'],
       },
       safety: {
-        factualUncertainty: ['Suma 87 € je ilustračná'],
+        factualUncertainty: ['Príklad je ilustračný'],
         complianceRisks: [],
-        recommendedDisclaimer: 'Nejde o finančné poradenstvo; konkrétne riešenie závisí od individuálnej situácie.',
-        sensitiveInfoWarnings: ['Neuvádzať skutočné meno klienta'],
+        recommendedDisclaimer: 'Konkrétny výsledok závisí od individuálnej situácie.',
+        sensitiveInfoWarnings: ['Neuvádzať skutočné meno zákazníka'],
         claimsToVerify: [],
         sourceReferences: [],
       },
@@ -255,9 +255,9 @@ export class MockContentProvider
 
     return {
       variants: [
-        mk('A', 'Platil 87 € mesačne za tri poistky. Krytie? Takmer žiadne.', 'Čistý profesionálny výklad'),
-        mk('B', 'Klient sadol oproti mne a položil na stôl tri zmluvy.', 'Storytelling — príbeh klienta'),
-        mk('C', 'Toto ti poisťovák pri podpise nikdy nepovie.', 'Najsilnejší hook — curiosity gap'),
+        mk('A', 'Túto chybu robí 8 z 10 ľudí a ani o nej nevedia.', 'Čistý profesionálny výklad'),
+        mk('B', 'Zákazník sa posadil oproti mne a povedal jednu vetu.', 'Storytelling — príbeh zákazníka'),
+        mk('C', 'Toto ti o tejto téme nikto nepovie.', 'Najsilnejší hook — curiosity gap'),
       ],
     };
   }
@@ -276,8 +276,8 @@ export class MockContentProvider
       genericLanguage: ['„praktické rady"'],
       unsupportedClaims: [],
       complianceWarnings: [],
-      improvedHook: '[MOCK] 87 eur mesačne. Tri poistky. Nulové krytie príjmu.',
-      improvedCta: '[MOCK] Napíš mi slovo AUDIT a pozriem sa na tvoje zmluvy zadarmo.',
+      improvedHook: '[MOCK] Túto chybu robí 8 z 10 ľudí — a stojí ich to čas aj peniaze.',
+      improvedCta: '[MOCK] Napíš mi do správ a ukážem ti jednoduchý postup.',
     };
   }
 
@@ -287,8 +287,8 @@ export class MockContentProvider
     return {
       riskLevel: risky ? 'high' : 'low',
       findings: risky ? ['[MOCK] Obsah naznačuje garanciu výsledku'] : [],
-      requiredDisclaimers: ['Nejde o finančné poradenstvo.'],
-      blockedClaims: risky ? ['garancia výnosu'] : [],
+      requiredDisclaimers: ['Overte tvrdenia pred zverejnením.'],
+      blockedClaims: risky ? ['garancia výsledku'] : [],
       notes: '[MOCK] Kontrola prebehla v mock móde.',
     };
   }
@@ -296,7 +296,7 @@ export class MockContentProvider
   async transcribeAudio(input: TranscriptionInput): Promise<TranscriptionResult> {
     const name = input.filePath?.split(/[\\/]/).pop() || `in-memory ${input.mimeType}`;
     return {
-      text: `[MOCK PREPIS] Audio (${name}) — tu by bol skutočný prepis. Dnes som riešil klienta, ktorý mal tri poistky, ale ani jedna mu dobre nekryla výpadok príjmu.`,
+      text: `[MOCK PREPIS] Audio (${name}) — tu by bol skutočný prepis. Dnes sa ma zákazník spýtal na jednu vec, ktorá trápi väčšinu ľudí v mojom obore, a ukázal som mu jednoduchý postup.`,
       language: 'sk',
       durationSeconds: 42,
       segments: [
@@ -319,31 +319,31 @@ export class MockContentProvider
       language: 'sk',
       summary: {
         summary: `[MOCK] Analýza videa "${input.title}" na základe prepisu.`,
-        topic: 'poistenie príjmu', targetAudience: 'ľudia 30–45', viewerProblem: 'nekryté riziko výpadku príjmu',
-        corePromise: 'zistíš, čo ti v poistke chýba', mainLesson: 'krytie > počet zmlúv',
-        contentPillar: 'Finančné chyby', contentGoal: 'Education',
-        hook: '[MOCK] Prvá veta videa', setup: 'príbeh klienta', mainArgument: 'tri poistky bez krytia',
-        payoff: 'kontrola vlastnej zmluvy', cta: 'napíš mi AUDIT', likelyTemplate: 'Príbeh klienta',
+        topic: 'tipy z tvojho oboru', targetAudience: 'tvoji potenciálni zákazníci', viewerProblem: 'nevie sa v téme zorientovať',
+        corePromise: 'zistíš jednoduchý postup', mainLesson: 'konkrétny príklad > teória',
+        contentPillar: 'Tipy a rady', contentGoal: 'Education',
+        hook: '[MOCK] Prvá veta videa', setup: 'príbeh zákazníka', mainArgument: 'jednoduchý postup krok za krokom',
+        payoff: 'divák vie, čo má urobiť', cta: 'napíš mi do správ', likelyTemplate: 'Príbeh klienta',
         claimsToVerify: ['[MOCK] konkrétne čísla v príklade'],
       },
       segments: [
         seg(0, Math.round(dur * 0.1), 'Hook', '[MOCK] úvodný hook'),
         seg(Math.round(dur * 0.1), Math.round(dur * 0.4), 'Problem', '[MOCK] opis problému'),
-        seg(Math.round(dur * 0.4), Math.round(dur * 0.8), 'Example', '[MOCK] príklad klienta'),
+        seg(Math.round(dur * 0.4), Math.round(dur * 0.8), 'Example', '[MOCK] príklad zákazníka'),
         seg(Math.round(dur * 0.8), dur, 'CTA', '[MOCK] výzva na akciu'),
       ],
       creativeAnalysis: {
-        firstFrameClarity: '[MOCK] jasný', firstThreeSecondsHook: '[MOCK] silný — konkrétne číslo',
+        firstFrameClarity: '[MOCK] jasný', firstThreeSecondsHook: '[MOCK] silný — konkrétny príklad',
         curiosityGap: 'prítomný', specificity: 'vysoká', emotionalTension: 'stredná',
         storytellingStructure: 'problém→príklad→riešenie', pacing: 'strih ~2,5s', captionUse: 'titulky celý čas',
-        patternInterruptions: ['zoom v 12s'], openLoops: ['čo bolo v tretej zmluve'],
-        trustSignals: ['konkrétne čísla'], ctaStrength: 'stredná', dropOffRisks: ['dlhší úsek bez zmeny záberu v strede'],
+        patternInterruptions: ['zoom v 12s'], openLoops: ['ako to celé dopadlo'],
+        trustSignals: ['konkrétny príklad'], ctaStrength: 'stredná', dropOffRisks: ['dlhší úsek bez zmeny záberu v strede'],
       },
       reusableInsights: {
-        strongPatterns: ['[MOCK] číslo v hooku'], weakPatterns: ['[MOCK] generické CTA'],
-        reusableHookPatterns: ['suma + paradox'], reusableStructurePatterns: ['problém→príklad→riešenie→CTA'],
-        pacingRecommendations: ['strih každé 2–3 s'], contentGaps: ['chýba séria o hypotékach'],
-        inspiredIdeas: ['[MOCK] 3 veci v zmluve', '[MOCK] audit naživo', '[MOCK] otázky divákov'],
+        strongPatterns: ['[MOCK] konkrétny príklad v hooku'], weakPatterns: ['[MOCK] generické CTA'],
+        reusableHookPatterns: ['tvrdenie + paradox'], reusableStructurePatterns: ['problém→príklad→riešenie→CTA'],
+        pacingRecommendations: ['strih každé 2–3 s'], contentGaps: ['chýba séria o častých otázkach'],
+        inspiredIdeas: ['[MOCK] 3 časté chyby', '[MOCK] otázky a odpovede naživo', '[MOCK] za zákulisím'],
         recommendedImprovements: ['konkrétnejšie CTA'],
       },
       aiScores: {
@@ -357,18 +357,18 @@ export class MockContentProvider
     analyses: import('../prompts/content-dna-generation.prompt').DnaPromptAnalysis[],
   ): Promise<import('../schemas/video-analysis.schemas').ContentDnaOutput> {
     return {
-      dominantPillars: ['[MOCK] Finančné chyby', 'Príbehy z praxe'],
+      dominantPillars: ['[MOCK] Tipy a rady', 'Príbehy zákazníkov'],
       commonFormats: ['talking head s titulkami'],
-      recurringHookStructures: ['číslo + paradox', 'priznanie chyby'],
+      recurringHookStructures: ['tvrdenie + paradox', 'priznanie chyby'],
       typicalDurationSeconds: 32,
       speechPace: 'svižné, ~150 slov/min',
       visualRhythm: 'strih každé 2–3 sekundy',
       ctaPatterns: ['napíš mi [slovo]'],
-      strongestTopics: ['poistenie príjmu'],
+      strongestTopics: ['praktické tipy z oboru'],
       underperformingPatterns: ['dlhé intro bez pointy'],
-      contentGaps: ['hypotéky', 'investovanie pre začiatočníkov'],
+      contentGaps: ['časté otázky', 'obsah pre začiatočníkov'],
       rules: [
-        { category: 'hook', rule: '[MOCK] Hook s konkrétnym číslom v prvej vete', evidence: `${analyses.length} videí`, confidence: 0.6 },
+        { category: 'hook', rule: '[MOCK] Hook s konkrétnym príkladom v prvej vete', evidence: `${analyses.length} videí`, confidence: 0.6 },
         { category: 'structure', rule: '[MOCK] Problém → príklad → riešenie → CTA', evidence: `${analyses.length} videí`, confidence: 0.55 },
       ],
     };

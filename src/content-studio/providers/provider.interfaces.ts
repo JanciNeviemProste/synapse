@@ -98,6 +98,8 @@ export interface ComplianceInput {
   content: string;
   contentCategory?: string;
   complianceNotes?: string;
+  /** Brand industry — lets the checker adapt regulation expectations. */
+  industry?: string;
 }
 
 export interface InspirationAnalysisInput {

@@ -31,6 +31,10 @@ a Style Memory (učenie z úprav — len explicitne schválené preferencie).
 
 `CONTENT_STRATEGY_PROVIDER/MODEL`, `SCRIPT_GENERATION_PROVIDER/MODEL`, `SCRIPT_REVIEW_PROVIDER/MODEL`, `COMPLIANCE_PROVIDER/MODEL`, `TRANSCRIPTION_PROVIDER/MODEL`, `REALTIME_VOICE_PROVIDER/MODEL`, `VIDEO_UNDERSTANDING_PROVIDER/MODEL`, `OPENAI_API_KEY`, `CONTENT_STUDIO_STORAGE_DIR`, `CONTENT_AUDIO_MAX_FILE_SIZE_MB`, `VIDEO_ANALYSIS_MAX_FILE_SIZE_MB`, `VIDEO_ANALYSIS_MAX_DURATION_SECONDS`. Bez nastavenia čohokoľvek beží všetko v mock móde.
 
+## Odvetvová neutralita (od 2026-07-06)
+
+Modul je **odvetvovo neutrálny** — doménu (obor, publikum, tón, compliance) riadi výhradne Brand DNA, ktoré vstupuje do každého promptu cez `renderBrandContext`. Žiadny obor nie je zadrôtovaný: systémové šablóny sú generické, mock ukážky neutrálne (`[MOCK]` placeholdery bez náznaku oboru), compliance kontrolór (`compliance-check.prompt.ts`) je univerzálny a reguláciu (financie, zdravie, právo, hazard…) aplikuje len keď sedí k odvetviu značky (`ComplianceInput.industry` + `complianceNotes`). Pre konkrétny obor stačí vyplniť Brand DNA v `/content-studio/settings`.
+
 ## OpenRouter (od 2026-07-06)
 
 `AiService` podporuje tretí backend: `AI_PROVIDER=openrouter` + `OPENROUTER_API_KEY` (+ voliteľne `OPENROUTER_MODEL`, default `anthropic/claude-sonnet-4.5`). Auto priorita: Anthropic key → OpenRouter key → Claude CLI. Content Studio „anthropic" adapter beží nad AiService, takže OpenRouter automaticky poháňa aj všetky Content Studio textové workflow. Transkripcia a realtime voice ostávajú na `OPENAI_API_KEY` (OpenRouter Whisper/Realtime neponúka).

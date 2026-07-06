@@ -20,6 +20,7 @@ Moduly: `auth` (login + globálne gardy), `leads`, `coder`, `research`, `trackin
 - Spec: `docs/content-studio/SPEC.md` · architektúra + limity + V2 roadmap: `docs/content-studio/ARCHITECTURE.md` · adaptačné ADR: `docs/DECISIONS.md` (2026-07-06).
 - Flow: nápad (text/voice/audio/AI interview) → piliere → plány → Reel skripty (3 varianty) → AI review + compliance → schválenie (server-side vynútené) → handoff export. Plus Content Intelligence (video → analýza → Content DNA) a Style Memory.
 - Kľúčové pravidlá zo specu: human approval povinný (server-side), žiadne auto-publikovanie, žiadny Instagram scraping, mock mode funguje bez platených kľúčov, AI skóre vždy označené ako odhad, inšpirácie len na vzory — nikdy nekopírovať formulácie, video výkon = hypotézy, nie kauzalita.
+- **Odvetvovo neutrálny** (od 2026-07-06): žiadny obor nie je zadrôtovaný, doménu (obor/publikum/tón/compliance) riadi výhradne Brand DNA (`/content-studio/settings`). Compliance prompt univerzálny, reguláciu aplikuje podľa odvetvia značky.
 - Provider architektúra: interfaces v `src/content-studio/providers/`; adaptery anthropic (nad `AiService`) / openai (fetch, bez SDK) / mock; výber cez env `*_PROVIDER` (auto = reálny len s credentials). Nové env mená viď ARCHITECTURE.md.
 - **Čaká na DB:** migrácia `content_studio_init` sa vytvorí až PO baseline (fáza 4). Runtime nikdy nebežal (DB down). FFmpeg pridaný do Dockerfile.
 
