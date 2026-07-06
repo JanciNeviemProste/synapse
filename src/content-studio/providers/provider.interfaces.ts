@@ -135,7 +135,10 @@ export interface ComplianceProvider {
 // ---- Voice (spec §8) ----
 
 export interface TranscriptionInput {
-  filePath: string;
+  /** Path within content storage — used when the audio was persisted. */
+  filePath?: string;
+  /** In-memory audio — used when the user chose not to store the recording. */
+  fileBuffer?: Buffer;
   mimeType: string;
   language?: string;
 }

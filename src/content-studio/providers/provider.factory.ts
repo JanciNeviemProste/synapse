@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AnthropicContentProvider } from './anthropic.provider';
 import { MockContentProvider } from './mock.provider';
+import { OpenAiTranscriptionProvider } from './openai-transcription.provider';
 import {
   ComplianceProvider,
   ContentStrategyProvider,
@@ -50,6 +51,7 @@ export class ContentProviderFactory {
     private readonly configService: ConfigService,
     private readonly anthropicProvider: AnthropicContentProvider,
     private readonly mockProvider: MockContentProvider,
+    private readonly openaiTranscription: OpenAiTranscriptionProvider,
   ) {}
 
   private creds(): { anthropic: boolean; openai: boolean } {
@@ -95,14 +97,9 @@ export class ContentProviderFactory {
   }
 
   getTranscriptionProvider(): TranscriptionProvider {
-    // OpenAI Whisper adapter arrives in CS-4; until then auto resolves to mock.
-    const kind = this.kindFor('transcription', 'contentStudio.transcriptionProvider');
-    if (kind === 'openai') {
-      this.logger.warn(
-        'OpenAI transcription adapter not implemented yet (CS-4) — using mock',
-      );
-    }
-    return this.mockProvider;
+    return this.kindFor('transcription', 'contentStudio.transcriptionProvider') === 'openai'
+      ? this.openaiTranscription
+      : this.mockProvider;
   }
 
   getRealtimeProvider(): RealtimeVoiceProvider {

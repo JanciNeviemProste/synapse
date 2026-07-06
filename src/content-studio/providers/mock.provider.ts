@@ -272,8 +272,9 @@ export class MockContentProvider
   }
 
   async transcribeAudio(input: TranscriptionInput): Promise<TranscriptionResult> {
+    const name = input.filePath?.split(/[\\/]/).pop() || `in-memory ${input.mimeType}`;
     return {
-      text: `[MOCK PREPIS] Audio súbor ${input.filePath.split(/[\\/]/).pop()} — tu by bol skutočný prepis. Dnes som riešil klienta, ktorý mal tri poistky, ale ani jedna mu dobre nekryla výpadok príjmu.`,
+      text: `[MOCK PREPIS] Audio (${name}) — tu by bol skutočný prepis. Dnes som riešil klienta, ktorý mal tri poistky, ale ani jedna mu dobre nekryla výpadok príjmu.`,
       language: 'sk',
       durationSeconds: 42,
       segments: [

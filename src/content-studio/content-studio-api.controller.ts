@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -8,7 +9,10 @@ import {
   Patch,
   Post,
   Put,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import {
   BrandProfileDto,
@@ -30,6 +34,7 @@ import { InspirationService } from './services/inspiration.service';
 import { KnowledgeService } from './services/knowledge.service';
 import { PillarsService } from './services/pillars.service';
 import { TemplatesService } from './services/templates.service';
+import { VoiceService } from './services/voice.service';
 
 /** JSON API. Admin-only via the global AuthGuard — no @Public() here. */
 @Controller('api/content-studio')
@@ -41,7 +46,46 @@ export class ContentStudioApiController {
     private readonly inspirationService: InspirationService,
     private readonly brandProfileService: BrandProfileService,
     private readonly knowledgeService: KnowledgeService,
+    private readonly voiceService: VoiceService,
   ) {}
+
+  // ---- Voice (spec §7.2/§7.3) ----
+
+  @Post('voice/upload')
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // transcription + AI call
+  @UseInterceptors(FileInterceptor('audio', { limits: { fileSize: 60 * 1024 * 1024 } }))
+  async uploadVoice(
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Body() body: { saveAudio?: string; sessionType?: string; title?: string },
+  ) {
+    if (!file) {
+      throw new BadRequestException('Chýba audio súbor (pole "audio").');
+    }
+    return this.voiceService.processUpload({
+      buffer: file.buffer,
+      mimeType: file.mimetype,
+      sizeBytes: file.size,
+      saveAudio: body.saveAudio === 'true',
+      sessionType: body.sessionType === 'AUDIO_UPLOAD' ? 'AUDIO_UPLOAD' : 'QUICK_VOICE_NOTE',
+      title: body.title,
+    });
+  }
+
+  @Get('sessions/:id')
+  async getSession(@Param('id', ParseUUIDPipe) id: string) {
+    return this.voiceService.getSession(id);
+  }
+
+  @Delete('sessions/:id/audio')
+  async deleteSessionAudio(@Param('id', ParseUUIDPipe) id: string) {
+    return this.voiceService.deleteAudio(id);
+  }
+
+  @Delete('sessions/:id')
+  async deleteSession(@Param('id', ParseUUIDPipe) id: string) {
+    await this.voiceService.deleteSession(id);
+    return { ok: true };
+  }
 
   // ---- Ideas (spec §7.1) ----
 

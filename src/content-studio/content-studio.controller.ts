@@ -75,6 +75,16 @@ export class ContentStudioController {
     }
   }
 
+  @Get('voice')
+  async voice(@Res() res: Response): Promise<void> {
+    const sessions = await this.prisma.contentSession.findMany({
+      where: { type: { in: ['QUICK_VOICE_NOTE', 'AUDIO_UPLOAD'] } },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
+    this.render(res, 'voice', { sessions });
+  }
+
   @Get('ideas')
   async ideas(@Res() res: Response): Promise<void> {
     const [ideas, sessions] = await Promise.all([

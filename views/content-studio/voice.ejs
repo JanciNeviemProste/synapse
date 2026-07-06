@@ -1,0 +1,196 @@
+<%- include('../layouts/header', { title: 'Voice | Content Studio', currentPath: '/content-studio' }) %>
+
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-gray-900">Hlasové poznámky</h1>
+  <p class="text-sm text-gray-500 mt-1">Nahraj myšlienku alebo nahraj audio súbor — AI ju prepíše a vytiahne nápady</p>
+</div>
+
+<%- include('_subnav', { subnavPath: '/content-studio/voice' }) %>
+
+<div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6 text-sm text-amber-800">
+  ⚠ Neuvádzajte mená ani identifikačné údaje klientov, pokiaľ na to nemáte oprávnenie.
+</div>
+
+<div class="grid lg:grid-cols-2 gap-6 mb-8">
+  <!-- Recorder -->
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-1">Nahrávanie</h2>
+    <p class="text-xs text-gray-400 mb-4">Nahrávka sa spracuje lokálne a odošle až po tvojom potvrdení.</p>
+
+    <div class="flex flex-col items-center gap-4">
+      <div id="rec-state" class="text-xs font-medium uppercase tracking-wide text-gray-400">Pripravené</div>
+      <div id="rec-visual" class="w-24 h-24 rounded-full flex items-center justify-center bg-gray-100 transition-colors">
+        <i data-lucide="mic" class="w-10 h-10 text-gray-500"></i>
+      </div>
+      <div id="rec-time" class="text-2xl font-mono text-gray-900">00:00</div>
+      <div class="flex items-center gap-2">
+        <button id="rec-start" class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">Nahrávať</button>
+        <button id="rec-pause" class="hidden px-4 py-2 bg-white border border-gray-300 text-sm font-medium rounded-lg">Pauza</button>
+        <button id="rec-stop" class="hidden px-4 py-2 bg-gray-900 text-white text-sm font-semibold rounded-lg">Ukončiť</button>
+        <button id="rec-cancel" class="hidden px-4 py-2 text-red-600 text-sm font-medium">Zrušiť</button>
+      </div>
+      <audio id="rec-playback" controls class="hidden w-full"></audio>
+      <div id="rec-actions" class="hidden w-full space-y-3">
+        <label class="flex items-center gap-2 text-sm text-gray-700">
+          <input type="checkbox" id="rec-save-audio" class="rounded">
+          Uložiť aj audio nahrávku (inak sa uchová len prepis)
+        </label>
+        <div class="flex gap-2">
+          <button id="rec-upload" class="flex-1 px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">Prepísať a extrahovať nápady</button>
+          <button id="rec-discard" class="px-4 py-2.5 text-red-600 text-sm font-medium">Zahodiť</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- File upload -->
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-1">Nahrať audio súbor</h2>
+    <p class="text-xs text-gray-400 mb-4">Podporované: webm, mp3, m4a, wav, ogg (max 50 MB).</p>
+    <form id="audio-upload-form" class="space-y-3">
+      <input type="file" id="audio-file" accept="audio/*" required class="w-full text-sm text-gray-600 file:mr-3 file:px-4 file:py-2 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 file:text-sm file:font-medium">
+      <input type="text" id="audio-title" maxlength="200" placeholder="Názov (voliteľné)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+      <label class="flex items-center gap-2 text-sm text-gray-700">
+        <input type="checkbox" id="audio-save" class="rounded">
+        Uložiť aj audio súbor
+      </label>
+      <button class="w-full px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">Nahrať a spracovať</button>
+    </form>
+  </div>
+</div>
+
+<div id="voice-result" class="hidden bg-white rounded-xl border border-green-200 p-6 mb-8"></div>
+
+<!-- Sessions -->
+<div class="bg-white rounded-xl border border-gray-200 p-6">
+  <h2 class="text-lg font-semibold text-gray-900 mb-4">Hlasové sessions</h2>
+  <% if (sessions.length === 0) { %><p class="text-sm text-gray-400">Zatiaľ žiadne.</p><% } %>
+  <ul class="divide-y divide-gray-100">
+    <% for (const s of sessions) { %>
+    <li class="py-3">
+      <div class="flex items-center justify-between gap-2">
+        <div class="min-w-0">
+          <span class="text-sm font-medium text-gray-900"><%= s.title || s.type %></span>
+          <span class="text-xs text-gray-400 ml-2"><%= new Date(s.createdAt).toLocaleString('sk-SK') %><%= s.durationSeconds ? ' · ' + s.durationSeconds + 's' : '' %><%= s.audioStoragePath ? ' · audio uložené' : '' %></span>
+        </div>
+        <div class="flex items-center gap-2 text-xs shrink-0">
+          <span class="px-2 py-0.5 rounded-full <%= s.status === 'COMPLETED' ? 'bg-green-50 text-green-700' : s.status === 'FAILED' ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-600' %>"><%= s.status %></span>
+          <% if (s.audioStoragePath) { %><button class="sess-del-audio text-amber-600 hover:underline" data-id="<%= s.id %>">Zmazať audio</button><% } %>
+          <button class="sess-del text-red-500 hover:text-red-700" data-id="<%= s.id %>">Zmazať session</button>
+        </div>
+      </div>
+      <% if (s.transcript) { %>
+      <details class="mt-1"><summary class="text-xs text-indigo-600 cursor-pointer">Prepis</summary>
+        <p class="text-xs text-gray-600 mt-1 whitespace-pre-wrap"><%= s.transcript %></p>
+      </details>
+      <% } %>
+    </li>
+    <% } %>
+  </ul>
+</div>
+
+<script>
+(() => {
+  let mediaRecorder = null, chunks = [], blob = null, timer = null, seconds = 0, state = 'idle';
+  const $ = (id) => document.getElementById(id);
+  const setState = (s, label, color) => {
+    state = s;
+    $('rec-state').textContent = label;
+    $('rec-visual').className = 'w-24 h-24 rounded-full flex items-center justify-center transition-colors ' + (color || 'bg-gray-100');
+  };
+  const fmt = (n) => String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0');
+
+  $('rec-start').addEventListener('click', async () => {
+    setState('requesting_permission', 'Žiadam o mikrofón...', 'bg-amber-100');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      chunks = []; seconds = 0; blob = null;
+      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        if (state === 'cancelled') { setState('idle', 'Pripravené'); return; }
+        blob = new Blob(chunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+        $('rec-playback').src = URL.createObjectURL(blob);
+        $('rec-playback').classList.remove('hidden');
+        $('rec-actions').classList.remove('hidden');
+        setState('completed', 'Nahrané — skontroluj a odošli', 'bg-green-100');
+      };
+      mediaRecorder.start();
+      timer = setInterval(() => { if (state === 'listening') { seconds++; $('rec-time').textContent = fmt(seconds); } }, 1000);
+      setState('listening', 'Nahrávam 🔴', 'bg-red-100 animate-pulse');
+      $('rec-start').classList.add('hidden');
+      ['rec-pause', 'rec-stop', 'rec-cancel'].forEach(id => $(id).classList.remove('hidden'));
+    } catch (e) {
+      setState('error', 'Mikrofón zamietnutý', 'bg-red-100');
+    }
+  });
+
+  $('rec-pause').addEventListener('click', () => {
+    if (state === 'listening') { mediaRecorder.pause(); setState('paused', 'Pauza', 'bg-amber-100'); $('rec-pause').textContent = 'Pokračovať'; }
+    else if (state === 'paused') { mediaRecorder.resume(); setState('listening', 'Nahrávam 🔴', 'bg-red-100 animate-pulse'); $('rec-pause').textContent = 'Pauza'; }
+  });
+
+  const resetControls = () => {
+    clearInterval(timer);
+    $('rec-start').classList.remove('hidden');
+    ['rec-pause', 'rec-stop', 'rec-cancel'].forEach(id => $(id).classList.add('hidden'));
+    $('rec-pause').textContent = 'Pauza';
+  };
+
+  $('rec-stop').addEventListener('click', () => { resetControls(); mediaRecorder.stop(); });
+  $('rec-cancel').addEventListener('click', () => { setState('cancelled', ''); resetControls(); mediaRecorder.stop(); $('rec-time').textContent = '00:00'; });
+  $('rec-discard').addEventListener('click', () => {
+    blob = null;
+    $('rec-playback').classList.add('hidden');
+    $('rec-actions').classList.add('hidden');
+    $('rec-time').textContent = '00:00';
+    setState('idle', 'Pripravené');
+  });
+
+  const upload = async (audioBlobOrFile, saveAudio, sessionType, title) => {
+    const result = $('voice-result');
+    result.classList.remove('hidden');
+    result.innerHTML = '<p class="text-sm text-gray-600">Spracúvam — prepis + extrakcia nápadov...</p>';
+    const form = new FormData();
+    form.append('audio', audioBlobOrFile, audioBlobOrFile.name || 'nahravka.webm');
+    form.append('saveAudio', String(saveAudio));
+    form.append('sessionType', sessionType);
+    if (title) form.append('title', title);
+    try {
+      const res = await fetch('/api/content-studio/voice/upload', { method: 'POST', body: form });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      result.innerHTML = '<p class="text-sm font-medium text-green-700 mb-2">Hotovo — ' + data.ideas.length + ' nápadov.</p>' +
+        '<details class="mb-2"><summary class="text-xs text-indigo-600 cursor-pointer">Prepis</summary><p class="text-xs text-gray-600 mt-1 whitespace-pre-wrap">' + (data.session.transcript || '') + '</p></details>' +
+        data.ideas.map(i => '<div class="text-sm text-gray-800 py-0.5">• ' + i.title + '</div>').join('') +
+        '<a href="/content-studio/ideas" class="text-sm text-indigo-600 hover:underline">Spravovať nápady →</a>';
+    } catch (err) {
+      result.innerHTML = '<p class="text-sm text-red-600">Spracovanie zlyhalo: ' + err.message + '</p>';
+    }
+  };
+
+  $('rec-upload').addEventListener('click', () => {
+    if (blob) upload(blob, $('rec-save-audio').checked, 'QUICK_VOICE_NOTE');
+  });
+
+  $('audio-upload-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const file = $('audio-file').files[0];
+    if (file) upload(file, $('audio-save').checked, 'AUDIO_UPLOAD', $('audio-title').value || undefined);
+  });
+
+  document.querySelectorAll('.sess-del').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('Zmazať session vrátane prepisu a audia?')) return;
+    const res = await fetch('/api/content-studio/sessions/' + b.dataset.id, { method: 'DELETE' });
+    if (res.ok) location.reload();
+  }));
+  document.querySelectorAll('.sess-del-audio').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('Zmazať uloženú audio nahrávku? Prepis ostane.')) return;
+    const res = await fetch('/api/content-studio/sessions/' + b.dataset.id + '/audio', { method: 'DELETE' });
+    if (res.ok) location.reload();
+  }));
+})();
+</script>
+
+<%- include('../layouts/footer') %>

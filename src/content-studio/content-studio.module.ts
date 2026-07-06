@@ -5,6 +5,7 @@ import { ContentStudioController } from './content-studio.controller';
 import { ContentJobsService } from './jobs/content-jobs.service';
 import { AnthropicContentProvider } from './providers/anthropic.provider';
 import { MockContentProvider } from './providers/mock.provider';
+import { OpenAiTranscriptionProvider } from './providers/openai-transcription.provider';
 import { ContentProviderFactory } from './providers/provider.factory';
 import { BrandProfileService } from './services/brand-profile.service';
 import { IdeasService } from './services/ideas.service';
@@ -12,6 +13,7 @@ import { InspirationService } from './services/inspiration.service';
 import { KnowledgeService } from './services/knowledge.service';
 import { PillarsService } from './services/pillars.service';
 import { TemplatesService } from './services/templates.service';
+import { VoiceService } from './services/voice.service';
 import { ContentStorageService } from './storage/content-storage.service';
 
 @Module({
@@ -20,6 +22,7 @@ import { ContentStorageService } from './storage/content-storage.service';
   providers: [
     AnthropicContentProvider,
     MockContentProvider,
+    OpenAiTranscriptionProvider,
     ContentProviderFactory,
     ContentStorageService,
     ContentJobsService,
@@ -29,6 +32,7 @@ import { ContentStorageService } from './storage/content-storage.service';
     TemplatesService,
     PillarsService,
     InspirationService,
+    VoiceService,
   ],
   exports: [
     ContentProviderFactory,
