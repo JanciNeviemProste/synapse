@@ -21,5 +21,8 @@ undici@7→7.28, multer@2→2.2, picomatch@4→4.0.4, fast-uri@3→3.1.2. Cross-
 ## 2026-07-05 — `GET /api/cloner/:id` je verejný
 Anonymný prospect po submite formulára polluje status. Endpoint vracia whitelisted subset polí (bez `generatedHtml`) — overené v cloner.controller.ts.
 
+## 2026-07-06 — Content Studio: celý spec, adaptovaný na single-tenant Synapse
+Spec `docs/content-studio/SPEC.md` je písaný pre multi-tenant SaaS (workspaces, RLS, React, Brand DNA, Knowledge Base, Video Studio). Rozhodnutie (Janči): realizovať celý spec po fázach CS-1..CS-9 s adaptáciami: (1) single-tenant — bez workspace_id/RLS, izolácia = globálny AuthGuard; (2) EJS SSR + vanilla JS namiesto React; (3) Brand DNA a Knowledge Base sa vytvoria ako súčasť modulu (neexistovali); (4) „Video Studio handoff" = export schváleného script package, žiadna generácia videa; (5) jobs = DB tabuľka + interval worker namiesto queue systému; (6) storage = lokálny disk (Railway efemérny — v neskoršej fáze objektový storage); (7) zod ako nová dep na validáciu AI JSON výstupov (class-validator na to nie je stavaný); (8) každý AI provider má mock adapter — modul plne funkčný bez platených kľúčov (`*_PROVIDER=mock`). Zamietnuté: prepis na React/Next, multi-tenant vrstva „do zásoby", Instagram scraping (aj spec ho zakazuje).
+
 ## 2026-07-05 — Master prompt v2 ako procesný štandard
 `SYNAPSE-MASTER-PROMPT-v2.md` = záväzný proces (DISKUSIA→GO→EXEKÚCIA, dôkazové reporty, security brány). Projektový `CLAUDE.md` = zdroj pravdy o kontexte, aktualizovaný po každej fáze.

@@ -14,7 +14,13 @@ Interný „agency OS" pre Synapse Studio. Single-tenant, jediný používateľ 
 ## Architektúra
 Jeden NestJS proces: EJS SSR dashboard + Telegram bot + crony. Dashboard/kanban servuje `src/leads/leads.controller.ts` (route `/`). Telegram router `src/telegram/telegram.update.ts` — moduly si registrujú handlery. AI cez `src/ai/ai.service.ts` (Anthropic SDK / Claude CLI fallback).
 
-Moduly: `auth` (login + globálne gardy), `leads`, `coder`, `research`, `tracking`, `booking`, `figma`, `cloner`, `gmail`, `images`, `telegram`, `ai`, `database`, `common`.
+Moduly: `auth` (login + globálne gardy), `leads`, `coder`, `research`, `tracking`, `booking`, `figma`, `cloner`, `gmail`, `images`, `telegram`, `ai`, `database`, `common`. Vo výstavbe: `content-studio` (viď nižšie).
+
+## Content Studio (vo výstavbe, od 2026-07-06)
+- Spec: `docs/content-studio/SPEC.md` (nápady → piliere → plány → Reel skripty → schvaľovanie → handoff; voice vstupy; Content Intelligence video analýza). Realizuje sa celý spec po fázach CS-1..CS-9; adaptácie na single-tenant NestJS/EJS zdokumentované v `docs/DECISIONS.md` (2026-07-06).
+- Kľúčové pravidlá zo specu: human approval povinný (server-side), žiadne auto-publikovanie, žiadny Instagram scraping, mock mode musí fungovať bez platených kľúčov, AI skóre vždy označené ako odhad, inšpirácie len na vzory — nikdy nekopírovať formulácie.
+- Provider architektúra: business logika závisí na interfaces (`src/content-studio/providers/`), nie SDK; adaptery anthropic (nad `AiService`) / openai / mock; výber cez env `*_PROVIDER`.
+- Stav fáz: CS-1 done (docs). CS-2+ viď task list / session log.
 
 ## Auth model (od 2026-07-05)
 - **Nová routa = admin by default.** Globálny `APP_GUARD`: ThrottlerGuard → AuthGuard (`src/auth/auth.module.ts`).
