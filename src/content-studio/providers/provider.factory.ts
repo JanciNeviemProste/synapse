@@ -6,11 +6,13 @@ import { OpenAiRealtimeProvider } from './openai-realtime.provider';
 import { OpenAiTranscriptionProvider } from './openai-transcription.provider';
 import {
   ComplianceProvider,
+  ContentDnaProvider,
   ContentStrategyProvider,
   RealtimeVoiceProvider,
   ScriptGenerationProvider,
   ScriptReviewProvider,
   TranscriptionProvider,
+  VideoUnderstandingProvider,
 } from './provider.interfaces';
 
 export type ProviderKind = 'anthropic' | 'openai' | 'mock';
@@ -20,7 +22,8 @@ export type ProviderRole =
   | 'review'
   | 'compliance'
   | 'transcription'
-  | 'realtime';
+  | 'realtime'
+  | 'video';
 
 /**
  * Resolve which provider implementation to use for a role.
@@ -107,6 +110,19 @@ export class ContentProviderFactory {
   getRealtimeProvider(): RealtimeVoiceProvider {
     return this.kindFor('realtime', 'contentStudio.realtimeProvider') === 'openai'
       ? this.openaiRealtime
+      : this.mockProvider;
+  }
+
+  /** Transcript-based video understanding (anthropic) or mock (spec 14.4). */
+  getVideoUnderstandingProvider(): VideoUnderstandingProvider {
+    return this.kindFor('video', 'contentStudio.videoProvider') === 'anthropic'
+      ? this.anthropicProvider
+      : this.mockProvider;
+  }
+
+  getContentDnaProvider(): ContentDnaProvider {
+    return this.kindFor('video', 'contentStudio.videoProvider') === 'anthropic'
+      ? this.anthropicProvider
       : this.mockProvider;
   }
 }

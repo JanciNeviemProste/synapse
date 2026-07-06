@@ -555,3 +555,146 @@ enum ContentJobStatus {
   FAILED
   CANCELLED
 }
+
+// ==================== CONTENT INTELLIGENCE (spec §14) ====================
+
+model ContentVideoAsset {
+  id              String               @id @default(uuid())
+  title           String
+  sourceType      String               @default("upload")
+  sourceUrl       String?
+  storagePath     String
+  thumbnailPath   String?
+  mimeType        String
+  fileSizeBytes   Int
+  durationSeconds Float?
+  width           Int?
+  height          Int?
+  status          VideoAnalysisStatus  @default(UPLOADED)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  analyses        ContentVideoAnalysis[]
+  metrics         ContentVideoMetric[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ContentVideoAnalysis {
+  id                 String              @id @default(uuid())
+  videoAssetId       String
+  videoAsset         ContentVideoAsset   @relation(fields: [videoAssetId], references: [id], onDelete: Cascade)
+  status             VideoAnalysisStatus @default(QUEUED)
+  language           String?
+  transcript         String?             @db.Text
+  summary            Json?
+  contentStructure   Json?
+  creativeAnalysis   Json?
+  reusableInsights   Json?
+  aiScores           Json?
+  performanceHypotheses Json?
+  evidenceLevel      String?
+  providerMetadata   Json?
+  errorMessage       String?             @db.Text
+  approvedAt         DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  segments           ContentVideoSegment[]
+
+  @@index([videoAssetId])
+  @@index([status])
+}
+
+model ContentVideoSegment {
+  id                 String               @id @default(uuid())
+  analysisId         String
+  analysis           ContentVideoAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  startMs            Int
+  endMs              Int
+  transcriptText     String?              @db.Text
+  visualDescription  String?              @db.Text
+  onScreenText       String?
+  editingEvents      Json?
+  delivery           Json?
+  purpose            String?
+  attentionMechanism String?
+  confidence         Float?
+  sortOrder          Int                  @default(0)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@index([analysisId, sortOrder])
+}
+
+model ContentVideoMetric {
+  id                      String            @id @default(uuid())
+  videoAssetId            String
+  videoAsset              ContentVideoAsset @relation(fields: [videoAssetId], references: [id], onDelete: Cascade)
+  publishedAt             DateTime?
+  followerCountAtPublish  Int?
+  views                   Int?
+  reach                   Int?
+  likes                   Int?
+  comments                Int?
+  shares                  Int?
+  saves                   Int?
+  averageWatchTimeSeconds Float?
+  completionRate          Float?
+  source                  String            @default("manual")
+  recordedAt              DateTime          @default(now())
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+
+  @@index([videoAssetId])
+}
+
+model ContentDnaProfile {
+  id                 String            @id @default(uuid())
+  version            Int               @default(1)
+  status             String            @default("draft")
+  evidenceVideoCount Int               @default(0)
+  dna                Json?
+  approvedAt         DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  rules              ContentDnaRule[]
+
+  @@index([status])
+}
+
+model ContentDnaRule {
+  id                  String            @id @default(uuid())
+  contentDnaProfileId String
+  profile             ContentDnaProfile @relation(fields: [contentDnaProfileId], references: [id], onDelete: Cascade)
+  category            String
+  rule                String            @db.Text
+  evidence            Json?
+  confidence          Float             @default(0.5)
+  status              DnaRuleStatus     @default(PROPOSED)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@index([contentDnaProfileId])
+  @@index([status])
+}
+
+enum VideoAnalysisStatus {
+  UPLOADED
+  QUEUED
+  PREPROCESSING
+  TRANSCRIBING
+  ANALYZING_SCENES
+  ANALYZING_CONTENT
+  GENERATING_INSIGHTS
+  READY_FOR_REVIEW
+  APPROVED
+  FAILED
+  ARCHIVED
+}
+
+enum DnaRuleStatus {
+  PROPOSED
+  APPROVED
+  REJECTED
+  DEACTIVATED
+}

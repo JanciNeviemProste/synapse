@@ -2,6 +2,9 @@ import { Module } from '@nestjs/common';
 import { AiModule } from '../ai/ai.module';
 import { ContentStudioApiController } from './content-studio-api.controller';
 import { ContentStudioController } from './content-studio.controller';
+import { ContentDnaService } from './intelligence/content-dna.service';
+import { IntelligenceService } from './intelligence/intelligence.service';
+import { MediaService } from './intelligence/media.service';
 import { ContentJobsService } from './jobs/content-jobs.service';
 import { AnthropicContentProvider } from './providers/anthropic.provider';
 import { MockContentProvider } from './providers/mock.provider';
@@ -37,6 +40,9 @@ import { ContentStorageService } from './storage/content-storage.service';
     InspirationService,
     VoiceService,
     InterviewService,
+    MediaService,
+    IntelligenceService,
+    ContentDnaService,
   ],
   exports: [
     ContentProviderFactory,

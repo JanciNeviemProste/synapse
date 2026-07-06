@@ -72,6 +72,11 @@ export class ContentStorageService {
     return { storagePath: relPath, sizeBytes: data.length };
   }
 
+  /** Absolute path for tooling (ffmpeg). Validated against the storage root. */
+  absolutePath(storagePath: string): string {
+    return this.toAbsolute(storagePath);
+  }
+
   private toAbsolute(storagePath: string): string {
     const abs = resolve(this.rootDir, storagePath);
     if (!abs.startsWith(this.rootDir)) {

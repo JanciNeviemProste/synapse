@@ -63,6 +63,8 @@ export default () => ({
     transcriptionModel: process.env.TRANSCRIPTION_MODEL || '',
     realtimeProvider: process.env.REALTIME_VOICE_PROVIDER || 'auto',
     realtimeModel: process.env.REALTIME_VOICE_MODEL || '',
+    videoProvider: process.env.VIDEO_UNDERSTANDING_PROVIDER || 'auto',
+    videoModel: process.env.VIDEO_UNDERSTANDING_MODEL || '',
     openaiApiKey: process.env.OPENAI_API_KEY || '',
     storageDir: process.env.CONTENT_STUDIO_STORAGE_DIR || 'storage/content-studio',
     maxAudioSizeMb: parseInt(process.env.CONTENT_AUDIO_MAX_FILE_SIZE_MB || '50', 10),

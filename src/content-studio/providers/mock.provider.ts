@@ -306,6 +306,74 @@ export class MockContentProvider
     };
   }
 
+  async analyzeVideo(
+    input: import('./provider.interfaces').VideoUnderstandingInput,
+  ): Promise<import('../schemas/video-analysis.schemas').VideoUnderstandingOutput> {
+    const dur = Math.round((input.durationSeconds || 30) * 1000);
+    const seg = (startMs: number, endMs: number, purpose: string, text: string) => ({
+      startMs, endMs, transcriptText: text, visualDescription: '[MOCK] Talking head',
+      onScreenText: '', editingEvent: 'strih', deliveryStyle: 'pokojný',
+      purpose, attentionMechanism: purpose === 'Hook' ? 'curiosity gap' : '', confidence: 0.6,
+    });
+    return {
+      language: 'sk',
+      summary: {
+        summary: `[MOCK] Analýza videa "${input.title}" na základe prepisu.`,
+        topic: 'poistenie príjmu', targetAudience: 'ľudia 30–45', viewerProblem: 'nekryté riziko výpadku príjmu',
+        corePromise: 'zistíš, čo ti v poistke chýba', mainLesson: 'krytie > počet zmlúv',
+        contentPillar: 'Finančné chyby', contentGoal: 'Education',
+        hook: '[MOCK] Prvá veta videa', setup: 'príbeh klienta', mainArgument: 'tri poistky bez krytia',
+        payoff: 'kontrola vlastnej zmluvy', cta: 'napíš mi AUDIT', likelyTemplate: 'Príbeh klienta',
+        claimsToVerify: ['[MOCK] konkrétne čísla v príklade'],
+      },
+      segments: [
+        seg(0, Math.round(dur * 0.1), 'Hook', '[MOCK] úvodný hook'),
+        seg(Math.round(dur * 0.1), Math.round(dur * 0.4), 'Problem', '[MOCK] opis problému'),
+        seg(Math.round(dur * 0.4), Math.round(dur * 0.8), 'Example', '[MOCK] príklad klienta'),
+        seg(Math.round(dur * 0.8), dur, 'CTA', '[MOCK] výzva na akciu'),
+      ],
+      creativeAnalysis: {
+        firstFrameClarity: '[MOCK] jasný', firstThreeSecondsHook: '[MOCK] silný — konkrétne číslo',
+        curiosityGap: 'prítomný', specificity: 'vysoká', emotionalTension: 'stredná',
+        storytellingStructure: 'problém→príklad→riešenie', pacing: 'strih ~2,5s', captionUse: 'titulky celý čas',
+        patternInterruptions: ['zoom v 12s'], openLoops: ['čo bolo v tretej zmluve'],
+        trustSignals: ['konkrétne čísla'], ctaStrength: 'stredná', dropOffRisks: ['dlhší úsek bez zmeny záberu v strede'],
+      },
+      reusableInsights: {
+        strongPatterns: ['[MOCK] číslo v hooku'], weakPatterns: ['[MOCK] generické CTA'],
+        reusableHookPatterns: ['suma + paradox'], reusableStructurePatterns: ['problém→príklad→riešenie→CTA'],
+        pacingRecommendations: ['strih každé 2–3 s'], contentGaps: ['chýba séria o hypotékach'],
+        inspiredIdeas: ['[MOCK] 3 veci v zmluve', '[MOCK] audit naživo', '[MOCK] otázky divákov'],
+        recommendedImprovements: ['konkrétnejšie CTA'],
+      },
+      aiScores: {
+        hookStrength: 7, clarity: 8, pacing: 7, visualEngagement: 6, trust: 7,
+        retentionPotential: 7, cta: 5, originality: 6, overall: 7,
+      },
+    };
+  }
+
+  async generateContentDna(
+    analyses: import('../prompts/content-dna-generation.prompt').DnaPromptAnalysis[],
+  ): Promise<import('../schemas/video-analysis.schemas').ContentDnaOutput> {
+    return {
+      dominantPillars: ['[MOCK] Finančné chyby', 'Príbehy z praxe'],
+      commonFormats: ['talking head s titulkami'],
+      recurringHookStructures: ['číslo + paradox', 'priznanie chyby'],
+      typicalDurationSeconds: 32,
+      speechPace: 'svižné, ~150 slov/min',
+      visualRhythm: 'strih každé 2–3 sekundy',
+      ctaPatterns: ['napíš mi [slovo]'],
+      strongestTopics: ['poistenie príjmu'],
+      underperformingPatterns: ['dlhé intro bez pointy'],
+      contentGaps: ['hypotéky', 'investovanie pre začiatočníkov'],
+      rules: [
+        { category: 'hook', rule: '[MOCK] Hook s konkrétnym číslom v prvej vete', evidence: `${analyses.length} videí`, confidence: 0.6 },
+        { category: 'structure', rule: '[MOCK] Problém → príklad → riešenie → CTA', evidence: `${analyses.length} videí`, confidence: 0.55 },
+      ],
+    };
+  }
+
   /** Real WebRTC voice can't run against a mock — UI falls back to text interview. */
   isAvailable(): boolean {
     return false;

@@ -1,0 +1,88 @@
+<%- include('../layouts/header', { title: 'Content DNA | Content Studio', currentPath: '/content-studio' }) %>
+
+<div class="mb-6 flex items-center justify-between">
+  <div>
+    <a href="/content-studio/intelligence" class="text-sm text-indigo-600 hover:underline">← Content Intelligence</a>
+    <h1 class="text-2xl font-bold text-gray-900 mt-1">Content DNA</h1>
+    <p class="text-sm text-gray-500 mt-1">Pozorované vzory z tvojich videí. Nikdy neprepisuje Brand DNA — generovanie ovplyvňujú len schválené pravidlá.</p>
+  </div>
+  <button id="dna-generate" class="px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50" <%= approvedCount === 0 ? 'disabled' : '' %>>
+    Generovať z <%= approvedCount %> schválených analýz
+  </button>
+</div>
+
+<%- include('_subnav', { subnavPath: '/content-studio/intelligence' }) %>
+
+<% if (!profile) { %>
+  <div class="bg-white rounded-xl border border-gray-200 p-6 text-sm text-gray-400">
+    Zatiaľ žiadny profil. Schváľ aspoň jednu video analýzu a vygeneruj Content DNA.
+  </div>
+<% } else { %>
+<div class="grid lg:grid-cols-2 gap-6">
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <h2 class="font-semibold text-gray-900 mb-1">Profil v<%= profile.version %></h2>
+    <p class="text-xs text-gray-400 mb-3">Dôkazová báza: <%= profile.evidenceVideoCount %> videí · <%= new Date(profile.createdAt).toLocaleString('sk-SK') %></p>
+    <% if (profile.dna) { %>
+    <dl class="space-y-1.5 text-sm">
+      <% for (const [k, v] of Object.entries(profile.dna)) { if (k === 'rules') continue; %>
+        <% const text = Array.isArray(v) ? v.join('; ') : v; if (text) { %>
+        <div><dt class="inline text-gray-400 text-xs"><%= k %>:</dt> <dd class="inline text-gray-800"><%= text %></dd></div>
+        <% } %>
+      <% } %>
+    </dl>
+    <% } %>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <h2 class="font-semibold text-gray-900 mb-3">Pravidlá (<%= profile.rules.length %>)</h2>
+    <div class="space-y-2">
+      <% for (const r of profile.rules) { %>
+      <div class="border border-gray-100 rounded-lg p-3">
+        <div class="flex items-center gap-2 text-xs mb-1">
+          <span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-medium"><%= r.category %></span>
+          <span class="text-gray-400">confidence <%= r.confidence %></span>
+          <span class="px-1.5 py-0.5 rounded <%= r.status === 'APPROVED' ? 'bg-green-50 text-green-700' : r.status === 'REJECTED' ? 'bg-red-50 text-red-700' : r.status === 'DEACTIVATED' ? 'bg-gray-200 text-gray-500' : 'bg-amber-50 text-amber-700' %>"><%= r.status %></span>
+        </div>
+        <p class="text-sm text-gray-800"><%= r.rule %></p>
+        <div class="flex items-center gap-3 mt-2 text-xs">
+          <% if (r.status !== 'APPROVED') { %><button class="rule-status text-green-700 hover:underline" data-id="<%= r.id %>" data-status="APPROVED">Schváliť</button><% } %>
+          <% if (r.status !== 'REJECTED') { %><button class="rule-status text-red-600 hover:underline" data-id="<%= r.id %>" data-status="REJECTED">Zamietnuť</button><% } %>
+          <% if (r.status === 'APPROVED') { %><button class="rule-status text-gray-500 hover:underline" data-id="<%= r.id %>" data-status="DEACTIVATED">Deaktivovať</button><% } %>
+          <button class="rule-delete text-gray-400 hover:text-red-600 ml-auto" data-id="<%= r.id %>">Zmazať</button>
+        </div>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<script>
+document.getElementById('dna-generate').addEventListener('click', async (e) => {
+  e.target.disabled = true; e.target.textContent = 'Generujem...';
+  try {
+    const res = await fetch('/api/content-studio/content-dna/generate', { method: 'POST' });
+    if (!res.ok) throw new Error((await res.json()).message || 'HTTP ' + res.status);
+    location.reload();
+  } catch (err) {
+    alert('Generovanie zlyhalo: ' + err.message);
+    e.target.disabled = false;
+  }
+});
+
+document.querySelectorAll('.rule-status').forEach(b => b.addEventListener('click', async () => {
+  const res = await fetch('/api/content-studio/content-dna/rules/' + b.dataset.id, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: b.dataset.status }),
+  });
+  if (res.ok) location.reload();
+}));
+
+document.querySelectorAll('.rule-delete').forEach(b => b.addEventListener('click', async () => {
+  if (!confirm('Zmazať pravidlo?')) return;
+  const res = await fetch('/api/content-studio/content-dna/rules/' + b.dataset.id, { method: 'DELETE' });
+  if (res.ok) location.reload();
+}));
+</script>
+
+<%- include('../layouts/footer') %>

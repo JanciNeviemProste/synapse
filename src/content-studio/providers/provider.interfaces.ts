@@ -186,6 +186,29 @@ export interface RealtimeVoiceProvider {
   isAvailable(): boolean;
 }
 
+// ---- Content Intelligence (spec 14.4) ----
+
+export interface VideoUnderstandingInput {
+  title: string;
+  durationSeconds?: number;
+  width?: number;
+  height?: number;
+  transcript: string;
+  transcriptSegments?: { startMs: number; endMs: number; text: string }[];
+}
+
+export interface VideoUnderstandingProvider {
+  analyzeVideo(
+    input: VideoUnderstandingInput,
+  ): Promise<import('../schemas/video-analysis.schemas').VideoUnderstandingOutput>;
+}
+
+export interface ContentDnaProvider {
+  generateContentDna(
+    analyses: import('../prompts/content-dna-generation.prompt').DnaPromptAnalysis[],
+  ): Promise<import('../schemas/video-analysis.schemas').ContentDnaOutput>;
+}
+
 export const PROVIDER_TOKENS = {
   contentStrategy: 'CONTENT_STRATEGY_PROVIDER',
   scriptGeneration: 'SCRIPT_GENERATION_PROVIDER',

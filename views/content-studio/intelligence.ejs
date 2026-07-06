@@ -1,0 +1,93 @@
+<%- include('../layouts/header', { title: 'Content Intelligence | Content Studio', currentPath: '/content-studio' }) %>
+
+<div class="mb-6 flex items-center justify-between">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Content Intelligence</h1>
+    <p class="text-sm text-gray-500 mt-1">Analýza vlastných videí — len autorizovaný obsah, žiadny scraping</p>
+  </div>
+  <a href="/content-studio/intelligence/content-dna" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100">
+    <i data-lucide="dna" class="w-4 h-4"></i>Content DNA
+  </a>
+</div>
+
+<%- include('_subnav', { subnavPath: '/content-studio/intelligence' }) %>
+
+<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+  <h2 class="text-lg font-semibold text-gray-900 mb-3">Nahrať video</h2>
+  <form id="video-form" class="grid md:grid-cols-4 gap-3 items-end">
+    <div class="md:col-span-2">
+      <input type="file" id="video-file" accept="video/mp4,video/quicktime,video/webm" required class="w-full text-sm text-gray-600 file:mr-3 file:px-4 file:py-2 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 file:text-sm file:font-medium">
+    </div>
+    <input type="text" id="video-title" maxlength="200" placeholder="Názov" class="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+    <button class="px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">Nahrať</button>
+  </form>
+  <p id="video-status" class="hidden text-sm mt-2"></p>
+  <p class="text-xs text-gray-400 mt-2">Max 300 MB, mp4/mov/webm. Analýza beží na pozadí — stav sa priebežne mení.</p>
+</div>
+
+<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+  <% if (assets.length === 0) { %>
+    <div class="bg-white rounded-xl border border-gray-200 p-6 text-sm text-gray-400 col-span-full">Žiadne videá.</div>
+  <% } %>
+  <% for (const a of assets) { %>
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col">
+    <a href="/content-studio/intelligence/<%= a.id %>" class="block bg-gray-100 aspect-video relative">
+      <% if (a.thumbnailPath) { %>
+        <img src="/content-studio/intelligence/<%= a.id %>/thumbnail" alt="" class="w-full h-full object-cover">
+      <% } else { %>
+        <div class="w-full h-full flex items-center justify-center text-gray-300"><i data-lucide="video" class="w-10 h-10"></i></div>
+      <% } %>
+      <% if (a.durationSeconds) { %><span class="absolute bottom-2 right-2 text-[11px] px-1.5 py-0.5 rounded bg-black/70 text-white"><%= Math.round(a.durationSeconds) %>s</span><% } %>
+    </a>
+    <div class="p-4 flex-1 flex flex-col">
+      <div class="flex items-center justify-between gap-2">
+        <a href="/content-studio/intelligence/<%= a.id %>" class="font-semibold text-gray-900 truncate hover:text-indigo-700"><%= a.title %></a>
+        <span class="text-[10px] px-1.5 py-0.5 rounded shrink-0 <%= a.status === 'APPROVED' ? 'bg-green-50 text-green-700' : a.status === 'FAILED' ? 'bg-red-50 text-red-700' : a.status === 'READY_FOR_REVIEW' ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600' %>"><%= a.status %></span>
+      </div>
+      <p class="text-xs text-gray-400 mt-1"><%= new Date(a.createdAt).toLocaleString('sk-SK') %> · <%= Math.round(a.fileSizeBytes / 1048576) %> MB</p>
+      <div class="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100 text-xs">
+        <% if (['UPLOADED', 'FAILED'].includes(a.status)) { %>
+          <button class="vid-analyze text-indigo-600 hover:underline" data-id="<%= a.id %>">Spustiť analýzu</button>
+        <% } %>
+        <button class="vid-delete text-red-500 hover:text-red-700 ml-auto" data-id="<%= a.id %>">Zmazať</button>
+      </div>
+    </div>
+  </div>
+  <% } %>
+</div>
+
+<script>
+document.getElementById('video-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const status = document.getElementById('video-status');
+  status.classList.remove('hidden');
+  status.className = 'text-sm mt-2 text-gray-600';
+  status.textContent = 'Nahrávam...';
+  const form = new FormData();
+  const file = document.getElementById('video-file').files[0];
+  form.append('video', file);
+  form.append('title', document.getElementById('video-title').value || file.name);
+  try {
+    const res = await fetch('/api/content-studio/intelligence/upload', { method: 'POST', body: form });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    location.reload();
+  } catch (err) {
+    status.className = 'text-sm mt-2 text-red-600';
+    status.textContent = 'Upload zlyhal: ' + err.message;
+  }
+});
+
+document.querySelectorAll('.vid-analyze').forEach(b => b.addEventListener('click', async () => {
+  b.textContent = 'Zaraďujem...';
+  const res = await fetch('/api/content-studio/intelligence/' + b.dataset.id + '/analyze', { method: 'POST' });
+  if (res.ok) location.reload(); else alert('Spustenie zlyhalo');
+}));
+
+document.querySelectorAll('.vid-delete').forEach(b => b.addEventListener('click', async () => {
+  if (!confirm('Zmazať video vrátane všetkých analýz?')) return;
+  const res = await fetch('/api/content-studio/intelligence/' + b.dataset.id, { method: 'DELETE' });
+  if (res.ok) location.reload();
+}));
+</script>
+
+<%- include('../layouts/footer') %>

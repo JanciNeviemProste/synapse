@@ -37,6 +37,8 @@ import { TemplatesService } from './services/templates.service';
 import { InterviewService } from './services/interview.service';
 import { VoiceService } from './services/voice.service';
 import { InterviewTurn } from './providers/provider.interfaces';
+import { ContentDnaService } from './intelligence/content-dna.service';
+import { IntelligenceService } from './intelligence/intelligence.service';
 
 /** JSON API. Admin-only via the global AuthGuard — no @Public() here. */
 @Controller('api/content-studio')
@@ -50,7 +52,110 @@ export class ContentStudioApiController {
     private readonly knowledgeService: KnowledgeService,
     private readonly voiceService: VoiceService,
     private readonly interviewService: InterviewService,
+    private readonly intelligenceService: IntelligenceService,
+    private readonly contentDnaService: ContentDnaService,
   ) {}
+
+  // ---- Content Intelligence (spec §14) ----
+
+  @Post('intelligence/upload')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @UseInterceptors(FileInterceptor('video', { limits: { fileSize: 350 * 1024 * 1024 } }))
+  async uploadVideo(
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Body() body: { title?: string; sourceUrl?: string },
+  ) {
+    if (!file) {
+      throw new BadRequestException('Chýba video súbor (pole "video").');
+    }
+    return this.intelligenceService.upload({
+      buffer: file.buffer,
+      mimeType: file.mimetype,
+      title: (body.title || file.originalname || 'Video').substring(0, 200),
+      sourceUrl: body.sourceUrl?.substring(0, 1000),
+    });
+  }
+
+  @Post('intelligence/:assetId/analyze')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async analyzeVideoAsset(@Param('assetId', ParseUUIDPipe) assetId: string) {
+    return this.intelligenceService.startAnalysis(assetId);
+  }
+
+  @Post('intelligence/:assetId/metrics')
+  async saveVideoMetrics(
+    @Param('assetId', ParseUUIDPipe) assetId: string,
+    @Body()
+    body: {
+      publishedAt?: string;
+      followerCountAtPublish?: number;
+      views?: number;
+      reach?: number;
+      likes?: number;
+      comments?: number;
+      shares?: number;
+      saves?: number;
+      averageWatchTimeSeconds?: number;
+      completionRate?: number;
+    },
+  ) {
+    return this.intelligenceService.saveMetrics(assetId, body);
+  }
+
+  @Patch('intelligence/analysis/:id/transcript')
+  async correctTranscript(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { transcript: string },
+  ) {
+    if (typeof body.transcript !== 'string') {
+      throw new BadRequestException('transcript musí byť string');
+    }
+    await this.intelligenceService.correctTranscript(id, body.transcript.substring(0, 200000));
+    return { ok: true };
+  }
+
+  @Post('intelligence/analysis/:id/approve')
+  async approveAnalysis(@Param('id', ParseUUIDPipe) id: string) {
+    return this.intelligenceService.approve(id);
+  }
+
+  @Delete('intelligence/:assetId')
+  async deleteVideoAsset(@Param('assetId', ParseUUIDPipe) assetId: string) {
+    await this.intelligenceService.deleteAsset(assetId);
+    return { ok: true };
+  }
+
+  // ---- Content DNA (spec 14.8) ----
+
+  @Post('content-dna/generate')
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // AI call
+  async generateContentDna() {
+    return this.contentDnaService.generate();
+  }
+
+  @Patch('content-dna/rules/:id')
+  async setDnaRuleStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { status?: string; rule?: string },
+  ) {
+    if (body.rule !== undefined) {
+      return this.contentDnaService.updateRule(id, String(body.rule).substring(0, 2000));
+    }
+    const allowed = ['PROPOSED', 'APPROVED', 'REJECTED', 'DEACTIVATED'] as const;
+    if (!allowed.includes(body.status as (typeof allowed)[number])) {
+      throw new BadRequestException('Neplatný status');
+    }
+    return this.contentDnaService.setRuleStatus(
+      id,
+      body.status as (typeof allowed)[number],
+    );
+  }
+
+  @Delete('content-dna/rules/:id')
+  async deleteDnaRule(@Param('id', ParseUUIDPipe) id: string) {
+    await this.contentDnaService.deleteRule(id);
+    return { ok: true };
+  }
 
   // ---- AI Interview (spec §7.4) ----
 

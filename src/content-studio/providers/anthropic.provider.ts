@@ -55,6 +55,22 @@ import {
 } from '../prompts/ai-content-interview.prompt';
 import { buildInspirationAnalysisPrompt } from '../prompts/inspiration-pattern-analysis.prompt';
 import { buildStyleMemoryPrompt } from '../prompts/style-memory-analysis.prompt';
+import { buildVideoAnalysisPrompt } from '../prompts/video-content-analysis.prompt';
+import {
+  buildContentDnaPrompt,
+  DnaPromptAnalysis,
+} from '../prompts/content-dna-generation.prompt';
+import {
+  ContentDnaOutput,
+  VideoUnderstandingOutput,
+  contentDnaSchema,
+  videoUnderstandingSchema,
+} from '../schemas/video-analysis.schemas';
+import {
+  ContentDnaProvider,
+  VideoUnderstandingInput,
+  VideoUnderstandingProvider,
+} from './provider.interfaces';
 
 /**
  * Anthropic-backed provider (via the existing AiService, which itself
@@ -67,7 +83,9 @@ export class AnthropicContentProvider
     ContentStrategyProvider,
     ScriptGenerationProvider,
     ScriptReviewProvider,
-    ComplianceProvider
+    ComplianceProvider,
+    VideoUnderstandingProvider,
+    ContentDnaProvider
 {
   private readonly logger = new Logger(AnthropicContentProvider.name);
 
@@ -181,5 +199,15 @@ export class AnthropicContentProvider
   checkContent(input: ComplianceInput): Promise<ComplianceResult> {
     const { system, user } = buildComplianceCheckPrompt(input);
     return this.generateValidated(complianceResultSchema, system, user, 'compliance');
+  }
+
+  analyzeVideo(input: VideoUnderstandingInput): Promise<VideoUnderstandingOutput> {
+    const { system, user } = buildVideoAnalysisPrompt(input);
+    return this.generateValidated(videoUnderstandingSchema, system, user, 'video-analysis');
+  }
+
+  generateContentDna(analyses: DnaPromptAnalysis[]): Promise<ContentDnaOutput> {
+    const { system, user } = buildContentDnaPrompt(analyses);
+    return this.generateValidated(contentDnaSchema, system, user, 'content-dna');
   }
 }

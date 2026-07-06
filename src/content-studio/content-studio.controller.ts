@@ -1,7 +1,9 @@
-import { Controller, Get, Logger, Res } from '@nestjs/common';
+import { Controller, Get, Logger, Param, ParseUUIDPipe, Res } from '@nestjs/common';
 import { Response } from 'express';
 import * as path from 'path';
 import { PrismaService } from '../database/prisma.service';
+import { ContentDnaService } from './intelligence/content-dna.service';
+import { IntelligenceService } from './intelligence/intelligence.service';
 import { BrandProfileService } from './services/brand-profile.service';
 import { IdeasService } from './services/ideas.service';
 import { InspirationService } from './services/inspiration.service';
@@ -22,6 +24,8 @@ export class ContentStudioController {
     private readonly inspirationService: InspirationService,
     private readonly brandProfileService: BrandProfileService,
     private readonly knowledgeService: KnowledgeService,
+    private readonly intelligenceService: IntelligenceService,
+    private readonly contentDnaService: ContentDnaService,
   ) {}
 
   private render(res: Response, view: string, data: Record<string, unknown>): void {
@@ -115,6 +119,54 @@ export class ContentStudioController {
   async inspiration(@Res() res: Response): Promise<void> {
     const sources = await this.inspirationService.list();
     this.render(res, 'inspiration', { sources });
+  }
+
+  @Get('intelligence')
+  async intelligence(@Res() res: Response): Promise<void> {
+    const assets = await this.intelligenceService.listAssets();
+    this.render(res, 'intelligence', { assets });
+  }
+
+  @Get('intelligence/content-dna')
+  async contentDna(@Res() res: Response): Promise<void> {
+    const profile = await this.contentDnaService.getLatestProfile();
+    const approvedCount = await this.prisma.contentVideoAnalysis.count({
+      where: { status: 'APPROVED' },
+    });
+    this.render(res, 'content-dna', { profile, approvedCount });
+  }
+
+  @Get('intelligence/:id')
+  async intelligenceDetail(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    try {
+      const asset = await this.intelligenceService.getDetail(id);
+      this.render(res, 'intelligence-detail', { asset });
+    } catch {
+      res.status(404).send('Video not found');
+    }
+  }
+
+  @Get('intelligence/:id/thumbnail')
+  async thumbnail(@Param('id', ParseUUIDPipe) id: string, @Res() res: Response): Promise<void> {
+    const thumb = await this.intelligenceService.getThumbnail(id).catch(() => null);
+    if (!thumb) {
+      res.status(404).send('No thumbnail');
+      return;
+    }
+    res.type(thumb.mime).send(thumb.buffer);
+  }
+
+  @Get('intelligence/:id/video')
+  async video(@Param('id', ParseUUIDPipe) id: string, @Res() res: Response): Promise<void> {
+    try {
+      const stream = await this.intelligenceService.getVideoStream(id);
+      res.type(stream.mime).send(stream.buffer);
+    } catch {
+      res.status(404).send('Video not found');
+    }
   }
 
   @Get('settings')

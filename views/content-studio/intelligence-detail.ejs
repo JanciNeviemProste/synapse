@@ -1,0 +1,174 @@
+<%- include('../layouts/header', { title: asset.title + ' | Content Intelligence', currentPath: '/content-studio' }) %>
+
+<% const analysis = asset.analyses && asset.analyses[0]; %>
+
+<div class="mb-6 flex items-center justify-between">
+  <div>
+    <a href="/content-studio/intelligence" class="text-sm text-indigo-600 hover:underline">← Knižnica</a>
+    <h1 class="text-2xl font-bold text-gray-900 mt-1"><%= asset.title %></h1>
+    <p class="text-sm text-gray-500 mt-1">
+      Status: <span class="font-medium"><%= asset.status %></span>
+      <% if (analysis && analysis.evidenceLevel) { %> · Dôkazy: <span class="font-medium"><%= analysis.evidenceLevel %></span><% } %>
+    </p>
+  </div>
+  <% if (analysis && analysis.status === 'READY_FOR_REVIEW') { %>
+    <button id="approve-btn" data-id="<%= analysis.id %>" class="px-5 py-2.5 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700">Schváliť analýzu</button>
+  <% } %>
+</div>
+
+<div class="grid lg:grid-cols-2 gap-6">
+  <div class="space-y-6">
+    <!-- Player -->
+    <div class="bg-black rounded-xl overflow-hidden">
+      <video id="player" controls class="w-full max-h-[420px]" src="/content-studio/intelligence/<%= asset.id %>/video"></video>
+    </div>
+
+    <!-- Timeline -->
+    <% if (analysis && analysis.segments && analysis.segments.length) { %>
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 class="font-semibold text-gray-900 mb-3">Timeline (klik = skok vo videu)</h2>
+      <div class="space-y-2">
+        <% for (const s of analysis.segments) { %>
+        <button class="seg w-full text-left border border-gray-100 rounded-lg p-2.5 hover:border-indigo-300" data-start="<%= s.startMs %>">
+          <div class="flex items-center gap-2 text-xs">
+            <span class="font-mono text-gray-500"><%= (s.startMs/1000).toFixed(1) %>–<%= (s.endMs/1000).toFixed(1) %>s</span>
+            <span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-medium"><%= s.purpose || '—' %></span>
+            <% if (s.confidence != null) { %><span class="text-gray-400">conf <%= s.confidence %></span><% } %>
+          </div>
+          <% if (s.transcriptText) { %><p class="text-sm text-gray-800 mt-1"><%= s.transcriptText %></p><% } %>
+          <% if (s.visualDescription) { %><p class="text-xs text-gray-500"><%= s.visualDescription %></p><% } %>
+        </button>
+        <% } %>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Transcript -->
+    <% if (analysis && analysis.transcript) { %>
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 class="font-semibold text-gray-900 mb-2">Prepis (editovateľný)</h2>
+      <textarea id="transcript-edit" rows="8" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"><%= analysis.transcript %></textarea>
+      <button id="transcript-save" data-id="<%= analysis.id %>" class="mt-2 px-4 py-2 bg-white border border-indigo-300 text-indigo-700 text-sm font-medium rounded-lg hover:bg-indigo-50">Uložiť korekciu</button>
+    </div>
+    <% } %>
+  </div>
+
+  <div class="space-y-6">
+    <% if (!analysis) { %>
+      <div class="bg-white rounded-xl border border-gray-200 p-6 text-sm text-gray-400">Analýza ešte nebeží — spusti ju z knižnice.</div>
+    <% } else if (analysis.errorMessage) { %>
+      <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">Analýza zlyhala: <%= analysis.errorMessage %></div>
+    <% } %>
+
+    <% if (analysis && analysis.summary) { %>
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 class="font-semibold text-gray-900 mb-2">Obsahová analýza</h2>
+      <p class="text-sm text-gray-800"><%= analysis.summary.summary %></p>
+      <dl class="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-3 text-xs">
+        <% const S = analysis.summary; const rows = [['Téma', S.topic], ['Publikum', S.targetAudience], ['Cieľ', S.contentGoal], ['Pilier', S.contentPillar], ['Hook', S.hook], ['CTA', S.cta], ['Šablóna', S.likelyTemplate]]; %>
+        <% for (const [k, v] of rows) { if (v) { %>
+          <dt class="text-gray-400"><%= k %></dt><dd class="text-gray-800"><%= v %></dd>
+        <% } } %>
+      </dl>
+      <% if (S.claimsToVerify && S.claimsToVerify.length) { %>
+        <p class="text-xs text-amber-700 mt-2">⚠ Overiť: <%= S.claimsToVerify.join('; ') %></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (analysis && analysis.aiScores) { %>
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 class="font-semibold text-gray-900 mb-1">Skóre <span class="text-[10px] font-normal px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 align-middle">AI odhad</span></h2>
+      <div class="grid grid-cols-3 gap-2 mt-2">
+        <% for (const [key, val] of Object.entries(analysis.aiScores)) { %>
+          <div class="text-center border border-gray-100 rounded-lg py-2">
+            <div class="text-lg font-bold text-gray-900"><%= val %></div>
+            <div class="text-[10px] text-gray-400"><%= key %></div>
+          </div>
+        <% } %>
+      </div>
+    </div>
+    <% } %>
+
+    <% if (analysis && analysis.creativeAnalysis) { %>
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 class="font-semibold text-gray-900 mb-2">Kreatívna analýza</h2>
+      <dl class="space-y-1.5 text-xs">
+        <% for (const [k, v] of Object.entries(analysis.creativeAnalysis)) { %>
+          <% const text = Array.isArray(v) ? v.join('; ') : v; if (text) { %>
+          <div><dt class="inline text-gray-400"><%= k %>:</dt> <dd class="inline text-gray-800"><%= text %></dd></div>
+          <% } %>
+        <% } %>
+      </dl>
+    </div>
+    <% } %>
+
+    <% if (analysis && analysis.reusableInsights) { %>
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 class="font-semibold text-gray-900 mb-2">Znovupoužiteľné vzory</h2>
+      <% for (const [k, arr] of Object.entries(analysis.reusableInsights)) { if (Array.isArray(arr) && arr.length) { %>
+        <div class="mb-2">
+          <span class="text-[10px] font-semibold text-gray-500 uppercase"><%= k %></span>
+          <% for (const item of arr) { %><div class="text-sm text-gray-800">• <%= item %></div><% } %>
+        </div>
+      <% } } %>
+    </div>
+    <% } %>
+
+    <!-- Metrics -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 class="font-semibold text-gray-900 mb-1">Výkonové metriky (manuálne)</h2>
+      <p class="text-xs text-gray-400 mb-3">Porovnáva sa normalizovane (na followerov/reach), nikdy surové čísla medzi účtami.</p>
+      <form id="metrics-form" class="grid grid-cols-3 gap-2 text-sm">
+        <% const fields = [['views','Views'],['reach','Reach'],['likes','Likes'],['comments','Komentáre'],['shares','Shares'],['saves','Uloženia'],['followerCountAtPublish','Followeri pri publikovaní'],['averageWatchTimeSeconds','Avg watch (s)'],['completionRate','Completion rate (0-1)']]; %>
+        <% for (const [name, label] of fields) { %>
+          <label class="text-[10px] text-gray-500"><%= label %>
+            <input name="<%= name %>" type="number" step="any" min="0" class="w-full rounded border-gray-300 px-2 py-1.5 text-sm mt-0.5">
+          </label>
+        <% } %>
+        <button class="col-span-3 px-4 py-2 bg-white border border-indigo-300 text-indigo-700 text-sm font-medium rounded-lg hover:bg-indigo-50">Uložiť metriky</button>
+      </form>
+      <% if (asset.metrics && asset.metrics.length) { %>
+        <p class="text-xs text-gray-500 mt-2">Posledný záznam: <%= new Date(asset.metrics[0].recordedAt).toLocaleString('sk-SK') %></p>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.seg').forEach(b => b.addEventListener('click', () => {
+  const player = document.getElementById('player');
+  player.currentTime = parseInt(b.dataset.start, 10) / 1000;
+  player.play();
+}));
+
+document.getElementById('transcript-save')?.addEventListener('click', async (e) => {
+  const res = await fetch('/api/content-studio/intelligence/analysis/' + e.target.dataset.id + '/transcript', {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ transcript: document.getElementById('transcript-edit').value }),
+  });
+  alert(res.ok ? 'Uložené' : 'Zlyhalo');
+});
+
+document.getElementById('approve-btn')?.addEventListener('click', async (e) => {
+  const res = await fetch('/api/content-studio/intelligence/analysis/' + e.target.dataset.id + '/approve', { method: 'POST' });
+  if (res.ok) location.reload(); else alert('Schválenie zlyhalo');
+});
+
+document.getElementById('metrics-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const body = {};
+  for (const [k, v] of f.entries()) { if (v !== '') body[k] = parseFloat(v); }
+  const res = await fetch('/api/content-studio/intelligence/<%= asset.id %>/metrics', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (res.ok) {
+    const data = await res.json();
+    alert('Uložené. Úroveň dôkazov: ' + data.evidenceLevel + '. Spusti analýzu znova pre nové hypotézy.');
+  } else alert('Zlyhalo');
+});
+</script>
+
+<%- include('../layouts/footer') %>
