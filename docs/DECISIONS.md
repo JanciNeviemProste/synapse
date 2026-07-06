@@ -1,5 +1,8 @@
 # DECISIONS.md — ADR log
 
+## 2026-07-06 — Neon.tech namiesto Supabase, čistý štart
+Supabase free-tier projekt sa po nečinnosti pauzol a stal sa neobnoviteľne nedostupným (`tenant/user not found`). Prechod na Neon: čistý Postgres (žiadne Supabase featury sa nepoužívali), auto-wake pri prvom pripojení (~500 ms), scale-to-zero. Rozhodnutie Jančiho: čistý štart bez záchrany starých leadov. Implementácia: `directUrl` v schema.prisma (pooler nepodporuje DDL), init migrácia `20260706203034_init` (27 tabuliek, CREATE-only), `prisma migrate deploy` pri každom Docker boote. Zamietnuté: obnova Supabase + pg_dump migrácia dát.
+
 ## 2026-03 — Monolit bez Dockeru/Redis/Python (retroaktívne, zo SYNAPSE-SYSTEM-FINAL.md)
 Jeden NestJS proces (backend + EJS SSR + Telegram bot + crony), žiadny message broker ani worker fleet. Dôvod: solo developer, single-tenant, minimálna prevádzková réžia. Zamietnuté: monorepo, React SPA, Redis queue.
 

@@ -3,7 +3,7 @@
 Interný „agency OS" pre Synapse Studio. Single-tenant, jediný používateľ = Janči. Klient tento systém nikdy nevidí. Proces práce definuje `SYNAPSE-MASTER-PROMPT-v2.md`, tento súbor definuje kontext.
 
 ## Stack & príkazy
-- NestJS 11 + TypeScript 5.9 + Prisma 6 (PostgreSQL/Supabase) + EJS/Tailwind CDN + grammy (Telegram). Package manager: **pnpm**.
+- NestJS 11 + TypeScript 5.9 + Prisma 6 (PostgreSQL na **Neon.tech**, pooled runtime + direct migrácie cez `DIRECT_URL`) + EJS/Tailwind CDN + grammy (Telegram). Package manager: **pnpm**.
 - Dev: `pnpm start:dev` (watch, port 3000)
 - Build: `pnpm run build` (= `prisma generate && nest build`)
 - Test: `pnpm test` (vitest) · Lint: `pnpm lint` (eslint flat) · Typecheck: `pnpm typecheck`
@@ -40,9 +40,9 @@ Moduly: `auth` (login + globálne gardy), `leads`, `coder`, `research`, `trackin
 - `prisma/schema.prisma` model `Lead` — živé dáta v DB.
 - `aicoder/` — legacy fragment, gitignored, nezasahovať.
 
-## Známe problémy (aktívne, 2026-07-05)
-1. **DB nedostupná:** Supabase pooler hlási `tenant/user postgres.jeehqohblhnhbotvqgzd not found` — projekt pravdepodobne pauznutý/zrušený. Blokuje migrations baseline (fáza 4), Content Studio migráciu a end-to-end oživenie modulov (fáza 5). Auth už runtime overený (viď nižšie).
-2. Booking/Figma/Cloner — kód + auth + rate limity hotové, ale end-to-end nikdy neoverené (čaká na DB + credentials).
+## Známe problémy (aktívne, 2026-07-06)
+1. ~~DB nedostupná (Supabase)~~ VYRIEŠENÉ 2026-07-06: **čistý štart na Neon.tech** (init migrácia `20260706203034_init`, 27 tabuliek). Staré leady zo Supabase sa nepreniesli (rozhodnutie Jančiho — projekt bol mŕtvy). `prisma migrate deploy` beží automaticky pri Docker boote.
+2. Booking/Cloner — smoke overené na živej DB (create+delete OK). Figma/Cloner GENEROVANIE stále neoverené end-to-end (čaká na FIGMA_ACCESS_TOKEN, resp. vedomý Anthropic spend). Booking bez Google Calendar creds funguje v degradovanom režime (sloty bez kalendára).
 3. ~~PrismaService zhadzuje boot pri nedostupnej DB~~ VYRIEŠENÉ 2026-07-06: graceful degradácia — boot pokračuje, DB routy padajú per-request, `isConnected()` na introspekciu.
 4. 7 moderate vulns (dev-chain: ajv/js-yaml/brace-expansion cez @nestjs/cli; qs cez platform-express) — accepted risk, bez same-major patchu.
 5. Dead config: `cron.leadInterval`/`figmaInterval` v configuration.ts — @Cron dekorátory používajú inline literály.
