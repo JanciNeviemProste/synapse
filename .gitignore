@@ -17,3 +17,4 @@ storage/
 Thumbs.db
 aicoder/
 package_tmp.json
+.claude/settings.local.json
