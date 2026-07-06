@@ -41,9 +41,9 @@ Moduly: `auth` (login + globálne gardy), `leads`, `coder`, `research`, `trackin
 - `aicoder/` — legacy fragment, gitignored, nezasahovať.
 
 ## Známe problémy (aktívne, 2026-07-05)
-1. **DB nedostupná:** Supabase pooler hlási `tenant/user postgres.jeehqohblhnhbotvqgzd not found` — projekt pravdepodobne pauznutý/zrušený. Blokuje runtime verifikáciu auth, migrations baseline (fáza 4) a oživenie modulov (fáza 5).
+1. **DB nedostupná:** Supabase pooler hlási `tenant/user postgres.jeehqohblhnhbotvqgzd not found` — projekt pravdepodobne pauznutý/zrušený. Blokuje migrations baseline (fáza 4), Content Studio migráciu a end-to-end oživenie modulov (fáza 5). Auth už runtime overený (viď nižšie).
 2. Booking/Figma/Cloner — kód + auth + rate limity hotové, ale end-to-end nikdy neoverené (čaká na DB + credentials).
-3. `PrismaService.onModuleInit` pri nedostupnej DB zhodí celý boot (rethrow) — zvážiť graceful degradáciu.
+3. ~~PrismaService zhadzuje boot pri nedostupnej DB~~ VYRIEŠENÉ 2026-07-06: graceful degradácia — boot pokračuje, DB routy padajú per-request, `isConnected()` na introspekciu.
 4. 7 moderate vulns (dev-chain: ajv/js-yaml/brace-expansion cez @nestjs/cli; qs cez platform-express) — accepted risk, bez same-major patchu.
 5. Dead config: `cron.leadInterval`/`figmaInterval` v configuration.ts — @Cron dekorátory používajú inline literály.
 6. `GmailParser.cleanFacebookUrl` stripuje query string, takže `profile.php?id=` URL strácajú id (messenger link sa nedá odvodiť) — funguje len pre username URLs a redirect-wrapped URLs.

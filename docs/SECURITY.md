@@ -7,7 +7,7 @@ Jediný admin (Janči). Auth: `ADMIN_PASSWORD` → browser cookie `synapse_auth`
 
 | Položka | Stav | Dôkaz |
 |---|---|---|
-| Server-side auth na admin routách | **PASS (kód)** | APP_GUARD v `src/auth/auth.module.ts`, commit 0f41227; runtime curl dôkaz čaká na DB |
+| Server-side auth na admin routách | **PASS (runtime)** | curl suite 2026-07-06 (app v degraded móde, bez DB): `/`→302 login, `/api/leads`→401 JSON, zlé heslo→bez cookie, správne→HttpOnly cookie, `x-admin-password` OK, zlý header→401, `/content-studio`→302, `?password=` nefunguje, login 429 po limite; verejné `/booking/public` a `/cloner/public`→200 |
 | Rate limiting | PASS (kód) | @nestjs/throttler global + per-route @Throttle |
 | Query-string password | ODSTRÁNENÝ | auth.guard.ts už query nečíta |
 | `pnpm audit --audit-level=high` | **PASS** | 0 high/critical; 7 moderate accepted (ajv/js-yaml/brace-expansion via @nestjs/cli dev-chain, qs via platform-express) |
