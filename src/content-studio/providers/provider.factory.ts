@@ -62,10 +62,13 @@ export class ContentProviderFactory {
   private creds(): { anthropic: boolean; openai: boolean } {
     const anthropicKey =
       this.configService.get<string>('anthropic.apiKey') || '';
+    const openrouterKey =
+      this.configService.get<string>('openrouter.apiKey') || '';
     const aiProvider = this.configService.get<string>('anthropic.provider') || 'auto';
     return {
-      // Claude CLI counts as anthropic credentials — AiService handles the fallback.
-      anthropic: !!anthropicKey || aiProvider === 'claude-cli',
+      // "anthropic" here means "AiService has a real text backend":
+      // Anthropic key, OpenRouter key, or explicit Claude CLI all qualify.
+      anthropic: !!anthropicKey || !!openrouterKey || aiProvider === 'claude-cli',
       openai: !!this.configService.get<string>('contentStudio.openaiApiKey'),
     };
   }

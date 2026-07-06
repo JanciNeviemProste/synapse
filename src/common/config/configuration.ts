@@ -29,6 +29,11 @@ export default () => ({
     provider: process.env.AI_PROVIDER || 'auto',
   },
 
+  openrouter: {
+    apiKey: process.env.OPENROUTER_API_KEY || '',
+    model: process.env.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4.5',
+  },
+
   figma: {
     accessToken: process.env.FIGMA_ACCESS_TOKEN || '',
   },

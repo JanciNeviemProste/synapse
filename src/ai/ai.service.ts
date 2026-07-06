@@ -6,35 +6,68 @@ import { writeFile, unlink } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
+interface OpenRouterResponse {
+  choices?: { message?: { content?: string | null } }[];
+  error?: { message?: string };
+}
+
+/** Extract assistant text from an OpenRouter chat-completions response. */
+export function pickOpenRouterContent(data: OpenRouterResponse): string {
+  const content = data.choices?.[0]?.message?.content;
+  if (typeof content !== 'string' || content.length === 0) {
+    throw new Error(
+      data.error?.message
+        ? `OpenRouter error: ${data.error.message}`
+        : 'OpenRouter returned no content',
+    );
+  }
+  return content;
+}
+
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
   private client: Anthropic | null = null;
   private model: string;
-  private provider: 'claude-cli' | 'anthropic-api';
+  private provider: 'claude-cli' | 'anthropic-api' | 'openrouter';
+  private openrouterKey: string;
+  private openrouterModel: string;
 
   constructor(private configService: ConfigService) {
     const apiKey = this.configService.get<string>('anthropic.apiKey');
+    this.openrouterKey =
+      this.configService.get<string>('openrouter.apiKey') || '';
+    this.openrouterModel =
+      this.configService.get<string>('openrouter.model') ||
+      'anthropic/claude-sonnet-4.5';
     this.model =
       this.configService.get<string>('anthropic.model') ||
       'claude-sonnet-4-20250514';
     const providerSetting =
       this.configService.get<string>('anthropic.provider') || 'auto';
 
-    if (
-      providerSetting === 'claude-cli' ||
-      (!apiKey && providerSetting === 'auto')
-    ) {
+    if (providerSetting === 'openrouter' && this.openrouterKey) {
+      this.provider = 'openrouter';
+      this.logger.log(
+        `AI service using OpenRouter (model: ${this.openrouterModel})`,
+      );
+    } else if (providerSetting === 'claude-cli') {
       this.provider = 'claude-cli';
       this.logger.log('AI service using Claude Code CLI');
     } else if (apiKey) {
       this.provider = 'anthropic-api';
       this.client = new Anthropic({ apiKey });
       this.logger.log(`AI service using Anthropic API (model: ${this.model})`);
+    } else if (this.openrouterKey) {
+      // auto: no Anthropic key but OpenRouter available
+      this.provider = 'openrouter';
+      this.logger.log(
+        `AI service using OpenRouter (model: ${this.openrouterModel})`,
+      );
     } else {
       this.provider = 'claude-cli';
       this.logger.warn(
-        'ANTHROPIC_API_KEY not set — falling back to Claude Code CLI',
+        'No ANTHROPIC_API_KEY or OPENROUTER_API_KEY — falling back to Claude Code CLI',
       );
     }
   }
@@ -43,6 +76,12 @@ export class AiService {
     systemPrompt: string,
     userMessage: string,
   ): Promise<string> {
+    if (this.provider === 'openrouter') {
+      return this.callOpenRouter([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ]);
+    }
     if (this.provider === 'claude-cli') {
       return this.callClaudeCli(systemPrompt, userMessage);
     }
@@ -93,6 +132,18 @@ export class AiService {
     imageUrl: string,
     userMessage: string,
   ): Promise<string> {
+    if (this.provider === 'openrouter') {
+      return this.callOpenRouter([
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: [
+            { type: 'image_url', image_url: { url: imageUrl } },
+            { type: 'text', text: userMessage },
+          ],
+        },
+      ]);
+    }
     if (this.provider === 'claude-cli') {
       return this.callClaudeCliWithImage(systemPrompt, imageUrl, userMessage);
     }
@@ -121,6 +172,60 @@ export class AiService {
       return textBlock?.text || '';
     } catch (error) {
       this.logger.error('AI image analysis failed', (error as Error).message);
+      throw error;
+    }
+  }
+
+  // --- OpenRouter provider (OpenAI-compatible chat completions) ---
+
+  private async callOpenRouter(
+    messages: {
+      role: 'system' | 'user';
+      content:
+        | string
+        | (
+            | { type: 'text'; text: string }
+            | { type: 'image_url'; image_url: { url: string } }
+          )[];
+    }[],
+  ): Promise<string> {
+    const started = Date.now();
+    try {
+      const response = await fetch(
+        'https://openrouter.ai/api/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.openrouterKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://synapse-studio.sk',
+            'X-Title': 'Synapse System',
+          },
+          body: JSON.stringify({
+            model: this.openrouterModel,
+            max_tokens: 4096,
+            messages,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const body = await response.text();
+        throw new Error(
+          `OpenRouter API error ${response.status}: ${body.substring(0, 300)}`,
+        );
+      }
+
+      const data = (await response.json()) as Parameters<
+        typeof pickOpenRouterContent
+      >[0];
+      const content = pickOpenRouterContent(data);
+      this.logger.debug(
+        `OpenRouter ok model=${this.openrouterModel} latencyMs=${Date.now() - started}`,
+      );
+      return content;
+    } catch (error) {
+      this.logger.error('OpenRouter generation failed', (error as Error).message);
       throw error;
     }
   }

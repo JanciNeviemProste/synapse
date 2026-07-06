@@ -32,7 +32,7 @@ Moduly: `auth` (login + globálne gardy), `leads`, `coder`, `research`, `trackin
 - Statické `/output/*` a `/public/*` sú verejné by design (cloner preview zdieľaný prospektom).
 
 ## Env vars (mená; hodnoty len v .env / Railway — NIKDY do gitu)
-`DATABASE_URL`, `ADMIN_PASSWORD`, `PORT`, `APP_URL`, `AI_PROVIDER`, `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_OWNER_CHAT_ID`, `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, `GMAIL_USER_EMAIL`, `GOOGLE_CALENDAR_ID`, `GITHUB_TOKEN`, `GITHUB_USERNAME`, `VERCEL_TOKEN`, `FIGMA_ACCESS_TOKEN`, `FIGMA_CRON_INTERVAL`, `LEAD_CRON_INTERVAL`, `LEAD_MIN_CONFIDENCE`, `UNSPLASH_ACCESS_KEY`, `PEXELS_API_KEY`.
+`DATABASE_URL`, `DIRECT_URL`, `ADMIN_PASSWORD`, `PORT`, `APP_URL`, `AI_PROVIDER` (auto|anthropic|openrouter|claude-cli), `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` (default anthropic/claude-sonnet-4.5), `TELEGRAM_BOT_TOKEN`, `TELEGRAM_OWNER_CHAT_ID`, `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, `GMAIL_USER_EMAIL`, `GOOGLE_CALENDAR_ID`, `GITHUB_TOKEN`, `GITHUB_USERNAME`, `VERCEL_TOKEN`, `FIGMA_ACCESS_TOKEN`, `FIGMA_CRON_INTERVAL`, `LEAD_CRON_INTERVAL`, `LEAD_MIN_CONFIDENCE`, `UNSPLASH_ACCESS_KEY`, `PEXELS_API_KEY`.
 
 ## NEDOTÝKAŤ SA (bez explicitného GO)
 - `src/leads/**` + `src/gmail/**` — produkčný lead pipeline, živé dáta.

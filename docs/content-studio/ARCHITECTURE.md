@@ -31,6 +31,10 @@ a Style Memory (učenie z úprav — len explicitne schválené preferencie).
 
 `CONTENT_STRATEGY_PROVIDER/MODEL`, `SCRIPT_GENERATION_PROVIDER/MODEL`, `SCRIPT_REVIEW_PROVIDER/MODEL`, `COMPLIANCE_PROVIDER/MODEL`, `TRANSCRIPTION_PROVIDER/MODEL`, `REALTIME_VOICE_PROVIDER/MODEL`, `VIDEO_UNDERSTANDING_PROVIDER/MODEL`, `OPENAI_API_KEY`, `CONTENT_STUDIO_STORAGE_DIR`, `CONTENT_AUDIO_MAX_FILE_SIZE_MB`, `VIDEO_ANALYSIS_MAX_FILE_SIZE_MB`, `VIDEO_ANALYSIS_MAX_DURATION_SECONDS`. Bez nastavenia čohokoľvek beží všetko v mock móde.
 
+## OpenRouter (od 2026-07-06)
+
+`AiService` podporuje tretí backend: `AI_PROVIDER=openrouter` + `OPENROUTER_API_KEY` (+ voliteľne `OPENROUTER_MODEL`, default `anthropic/claude-sonnet-4.5`). Auto priorita: Anthropic key → OpenRouter key → Claude CLI. Content Studio „anthropic" adapter beží nad AiService, takže OpenRouter automaticky poháňa aj všetky Content Studio textové workflow. Transkripcia a realtime voice ostávajú na `OPENAI_API_KEY` (OpenRouter Whisper/Realtime neponúka).
+
 ## Mock mode
 
 `*_PROVIDER=mock` (alebo `auto` bez kľúčov). Mock výstupy sú validované tými istými Zod schémami (unit testy). E2E bez kľúčov: nápad → skripty → review → schválenie → handoff; video pipeline s mock transkripciou/analýzou.
