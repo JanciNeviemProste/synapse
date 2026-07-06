@@ -7,6 +7,16 @@
 
 <%- include('_subnav', { subnavPath: '/content-studio/settings' }) %>
 
+<!-- Style Memory -->
+<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+  <div class="flex items-center justify-between mb-1">
+    <h2 class="text-lg font-semibold text-gray-900">Style Memory</h2>
+    <button id="sm-disable-all" class="px-3 py-1.5 bg-white border border-red-300 text-red-600 text-xs font-medium rounded-lg hover:bg-red-50">Vypnúť všetko</button>
+  </div>
+  <p class="text-xs text-gray-400 mb-3">Naučené preferencie z tvojich úprav skriptov. Generovanie ovplyvňujú len AKTÍVNE (tebou schválené).</p>
+  <div id="style-prefs" class="space-y-2 text-sm"><p class="text-gray-400 text-sm">Načítavam...</p></div>
+</div>
+
 <div class="grid lg:grid-cols-2 gap-6">
   <!-- Brand DNA -->
   <div class="bg-white rounded-xl border border-gray-200 p-6">
@@ -82,6 +92,44 @@
 
 <script>
 const lines = (v) => v.split('\n').map(s => s.trim()).filter(Boolean);
+
+// ---- Style Memory ----
+async function loadStylePrefs() {
+  const box = document.getElementById('style-prefs');
+  try {
+    const res = await fetch('/api/content-studio/style-preferences');
+    const prefs = await res.json();
+    if (!prefs.length) { box.innerHTML = '<p class="text-gray-400 text-sm">Žiadne preferencie — vzniknú po schválení upraveného skriptu.</p>'; return; }
+    box.innerHTML = prefs.map(p =>
+      '<div class="border border-gray-100 rounded-lg p-2.5 flex items-start justify-between gap-2">' +
+      '<div class="min-w-0"><span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-medium">' + p.preferenceType + '</span>' +
+      ' <span class="text-[10px] text-gray-400">conf ' + p.confidence + '</span>' +
+      ' <span class="text-[10px] px-1.5 py-0.5 rounded ' + (p.status === 'ACTIVE' ? 'bg-green-50 text-green-700' : p.status === 'DISABLED' ? 'bg-gray-200 text-gray-500' : 'bg-amber-50 text-amber-700') + '">' + p.status + '</span>' +
+      '<div class="text-sm text-gray-800 mt-1">' + p.preferenceValue + '</div></div>' +
+      '<div class="flex flex-col gap-1 text-xs shrink-0">' +
+      (p.status !== 'ACTIVE' ? '<button class="sm-status text-green-700 hover:underline" data-id="' + p.id + '" data-status="ACTIVE">Aktivovať</button>' : '') +
+      (p.status === 'ACTIVE' ? '<button class="sm-status text-gray-500 hover:underline" data-id="' + p.id + '" data-status="DISABLED">Vypnúť</button>' : '') +
+      '<button class="sm-delete text-red-500 hover:underline" data-id="' + p.id + '">Zmazať</button></div></div>'
+    ).join('');
+    box.querySelectorAll('.sm-status').forEach(b => b.addEventListener('click', async () => {
+      await fetch('/api/content-studio/style-preferences/' + b.dataset.id, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: b.dataset.status }),
+      });
+      loadStylePrefs();
+    }));
+    box.querySelectorAll('.sm-delete').forEach(b => b.addEventListener('click', async () => {
+      await fetch('/api/content-studio/style-preferences/' + b.dataset.id, { method: 'DELETE' });
+      loadStylePrefs();
+    }));
+  } catch { box.innerHTML = '<p class="text-red-600 text-sm">Načítanie zlyhalo.</p>'; }
+}
+loadStylePrefs();
+document.getElementById('sm-disable-all').addEventListener('click', async () => {
+  if (!confirm('Vypnúť všetky aktívne preferencie?')) return;
+  await fetch('/api/content-studio/style-preferences/disable-all', { method: 'POST' });
+  loadStylePrefs();
+});
 
 document.getElementById('brand-form').addEventListener('submit', async (e) => {
   e.preventDefault();

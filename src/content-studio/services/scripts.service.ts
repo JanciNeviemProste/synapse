@@ -8,6 +8,7 @@ import { GeneratedScriptVariant } from '../schemas/ai-output.schemas';
 import { BrandProfileService } from './brand-profile.service';
 import { InspirationService } from './inspiration.service';
 import { KnowledgeService } from './knowledge.service';
+import { StyleMemoryService } from './style-memory.service';
 import { TemplatesService } from './templates.service';
 
 export interface GenerateScriptsInput {
@@ -37,6 +38,7 @@ export class ScriptsService {
     private readonly templates: TemplatesService,
     private readonly inspiration: InspirationService,
     private readonly contentDna: ContentDnaService,
+    private readonly styleMemory: StyleMemoryService,
   ) {}
 
   async generate(input: GenerateScriptsInput): Promise<ReelScript[]> {
@@ -113,7 +115,15 @@ export class ScriptsService {
         contentIdeaId: input.contentIdeaId ?? null,
         contentPlanItemId: input.contentPlanItemId ?? null,
         versionName: variant.versionName,
-        strategy: variant.strategy as unknown as Prisma.InputJsonValue,
+        // _original snapshot enables Style Memory diffing after user edits (spec §23)
+        strategy: {
+          ...variant.strategy,
+          _original: {
+            hook: variant.hook,
+            cta: variant.cta,
+            spokenScript: variant.spokenScript,
+          },
+        } as unknown as Prisma.InputJsonValue,
         hook: variant.hook,
         setup: variant.setup || null,
         mainMessage: variant.mainMessage,
@@ -221,13 +231,50 @@ export class ScriptsService {
         `Neplatný prechod statusu ${script.status} → ${status}`,
       );
     }
-    return this.prisma.reelScript.update({
+    const updated = await this.prisma.reelScript.update({
       where: { id },
       data: {
         status,
         ...(status === 'APPROVED' && { approvedAt: new Date() }),
         ...(status === 'APPROVED' && { isSelected: true }),
       },
+    });
+    if (status === 'APPROVED') {
+      // learn from edits, best-effort (spec §23); proposals need user approval
+      this.styleMemory.analyzeScriptEdits(updated).catch((error: Error) => {
+        this.logger.warn(`style memory analysis failed: ${error.message}`);
+      });
+    }
+    return updated;
+  }
+
+  /** Apply the reviewer's improved hook/CTA (spec §22 partial regeneration). */
+  async applyImprovement(id: string, field: 'hook' | 'cta'): Promise<ReelScript> {
+    let script = await this.get(id);
+    if (!script.reviewerFeedback) {
+      script = await this.review(id);
+    }
+    const feedback = script.reviewerFeedback as { improvedHook?: string; improvedCta?: string } | null;
+    const value = field === 'hook' ? feedback?.improvedHook : feedback?.improvedCta;
+    if (!value) {
+      throw new BadRequestException('Reviewer nenavrhol vylepšenie pre toto pole.');
+    }
+    return this.updateContent(id, field === 'hook' ? { hook: value } : { cta: value });
+  }
+
+  /** Full regeneration: new 3-variant batch with the same brief (spec §22). */
+  async regenerate(id: string): Promise<ReelScript[]> {
+    const script = await this.get(id);
+    const strategy = (script.strategy as Record<string, string> | null) ?? {};
+    return this.generate({
+      topic: strategy['workingTitle'] || 'rovnaká téma',
+      contentIdeaId: script.contentIdeaId ?? undefined,
+      contentPlanItemId: script.contentPlanItemId ?? undefined,
+      goal: strategy['goal'],
+      targetAudience: strategy['targetAudience'],
+      length: strategy['recommendedLength'],
+      style: strategy['recommendedStyle'],
+      emotion: strategy['recommendedEmotion'],
     });
   }
 

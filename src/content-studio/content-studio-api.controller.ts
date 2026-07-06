@@ -46,6 +46,7 @@ import { ContentDnaService } from './intelligence/content-dna.service';
 import { IntelligenceService } from './intelligence/intelligence.service';
 import { PlansService } from './services/plans.service';
 import { ScriptsService } from './services/scripts.service';
+import { StyleMemoryService } from './services/style-memory.service';
 
 /** JSON API. Admin-only via the global AuthGuard — no @Public() here. */
 @Controller('api/content-studio')
@@ -63,7 +64,40 @@ export class ContentStudioApiController {
     private readonly contentDnaService: ContentDnaService,
     private readonly plansService: PlansService,
     private readonly scriptsService: ScriptsService,
+    private readonly styleMemoryService: StyleMemoryService,
   ) {}
+
+  // ---- Style Memory (spec §23) ----
+
+  @Get('style-preferences')
+  async listStylePreferences() {
+    return this.styleMemoryService.list();
+  }
+
+  @Patch('style-preferences/:id')
+  async updateStylePreference(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { status?: string; value?: string },
+  ) {
+    if (body.value !== undefined) {
+      return this.styleMemoryService.updateValue(id, String(body.value).substring(0, 2000));
+    }
+    if (!['PROPOSED', 'ACTIVE', 'DISABLED'].includes(body.status ?? '')) {
+      throw new BadRequestException('Neplatný status');
+    }
+    return this.styleMemoryService.setStatus(id, body.status as never);
+  }
+
+  @Delete('style-preferences/:id')
+  async deleteStylePreference(@Param('id', ParseUUIDPipe) id: string) {
+    await this.styleMemoryService.delete(id);
+    return { ok: true };
+  }
+
+  @Post('style-preferences/disable-all')
+  async disableStyleMemory() {
+    return { disabled: await this.styleMemoryService.disableAll() };
+  }
 
   // ---- Content plans (spec §15) ----
 
@@ -144,6 +178,24 @@ export class ContentStudioApiController {
   @Get('scripts/:id/handoff')
   async scriptHandoff(@Param('id', ParseUUIDPipe) id: string) {
     return this.scriptsService.buildHandoff(id);
+  }
+
+  @Post('scripts/:id/apply-improvement')
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // may trigger a review AI call
+  async applyImprovement(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { field: 'hook' | 'cta' },
+  ) {
+    if (!['hook', 'cta'].includes(body.field)) {
+      throw new BadRequestException('field musí byť hook alebo cta');
+    }
+    return this.scriptsService.applyImprovement(id, body.field);
+  }
+
+  @Post('scripts/:id/regenerate')
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // heavy AI call
+  async regenerateScript(@Param('id', ParseUUIDPipe) id: string) {
+    return this.scriptsService.regenerate(id);
   }
 
   @Delete('scripts/:id')

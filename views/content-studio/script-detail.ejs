@@ -45,6 +45,11 @@
         <button class="px-5 py-2 bg-white border border-indigo-300 text-indigo-700 text-sm font-semibold rounded-lg hover:bg-indigo-50">Uložiť úpravy</button>
         <span id="edit-saved" class="hidden text-sm text-green-600 ml-2">Uložené ✓</span>
       </form>
+      <div class="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-gray-100 text-xs">
+        <button id="improve-hook" class="text-indigo-600 hover:underline">Použiť vylepšený hook (AI)</button>
+        <button id="improve-cta" class="text-indigo-600 hover:underline">Použiť vylepšené CTA (AI)</button>
+        <button id="regen-btn" class="text-amber-700 hover:underline ml-auto">Regenerovať celý skript (3 nové varianty)</button>
+      </div>
     </div>
 
     <!-- Instagram assets -->
@@ -214,6 +219,26 @@ document.getElementById('handoff-btn')?.addEventListener('click', async () => {
     '<pre class="text-xs bg-gray-50 rounded-lg p-3 overflow-x-auto max-h-80">' + json.replace(/</g, '&lt;') + '</pre>' +
     '<button id="handoff-copy" class="mt-2 px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg">Kopírovať JSON</button>';
   document.getElementById('handoff-copy').addEventListener('click', () => navigator.clipboard.writeText(json));
+});
+
+const applyImprovement = async (field) => {
+  const res = await fetch('/api/content-studio/scripts/' + SCRIPT_ID + '/apply-improvement', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ field }),
+  });
+  if (res.ok) location.reload(); else alert((await res.json()).message || 'Zlyhalo');
+};
+document.getElementById('improve-hook')?.addEventListener('click', () => applyImprovement('hook'));
+document.getElementById('improve-cta')?.addEventListener('click', () => applyImprovement('cta'));
+
+document.getElementById('regen-btn')?.addEventListener('click', async (e) => {
+  if (!confirm('Vygenerovať 3 nové varianty s rovnakým zadaním? (1 AI volanie)')) return;
+  e.target.textContent = 'Generujem...';
+  const res = await fetch('/api/content-studio/scripts/' + SCRIPT_ID + '/regenerate', { method: 'POST' });
+  if (res.ok) {
+    const scripts = await res.json();
+    location.href = '/content-studio/scripts/' + scripts[0].id;
+  } else { alert('Regenerácia zlyhala'); e.target.textContent = 'Regenerovať celý skript (3 nové varianty)'; }
 });
 
 document.querySelectorAll('.copy-btn').forEach(b => b.addEventListener('click', () => {
