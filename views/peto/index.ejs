@@ -5,6 +5,10 @@
   <p class="text-sm text-gray-500 mt-1">Nahraj hlasovku → prepíše sa → vypadnú hotové skripty. Nič viac.</p>
 </div>
 
+<div class="bg-indigo-50/50 border border-indigo-100 rounded-lg px-4 py-3 mb-6 text-sm text-gray-600">
+  <strong class="text-gray-800">Načo to je:</strong> najjednoduchšia cesta od nápadu k hotovému skriptu na Reel/TikTok. Povieš myšlienku do mikrofónu (alebo napíšeš), AI ju prepíše a rovno z nej spraví 3 varianty skriptu. <span class="text-gray-500">Čím lepšie máš vyplnený <strong>brand</strong> a nahraté <strong>podklady</strong>, tým viac to znie ako ty a tým lepší je výsledok.</span>
+</div>
+
 <% if (mockMode) { %>
 <div class="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 mb-6 text-sm text-amber-800">
   ⚠ <strong>Testovací (mock) režim</strong> — chýba AI kľúč, tak sa generujú len ukážkové skripty (ignorujú tvoju myšlienku). Doplň <code>OPENROUTER_API_KEY</code> do <code>.env</code> a reštartuj server pre reálne generovanie.
@@ -344,19 +348,22 @@ async function sendAudio(blobOrFile, name) {
 // ---- Generate ----
 function renderVariants(variants) {
   const box = $('results');
-  box.innerHTML = '<h2 class="text-lg font-bold text-gray-900">Tvoje skripty</h2>';
+  box.innerHTML = '<h2 class="text-lg font-bold text-gray-900 mb-1">Tvoje skripty</h2>' +
+    '<p class="text-sm text-gray-500 mb-4">3 varianty — vyber si, čo sadne, skopíruj a nakrúť.</p>';
   const label = { A: 'A · Profesionálny', B: 'B · Príbeh', C: 'C · Najsilnejší hook' };
   for (const v of variants) {
     const ig = v.instagramAssets || {};
     const card = document.createElement('div');
-    card.className = 'bg-white rounded-xl border border-gray-200 p-6';
+    card.className = 'bg-white rounded-xl border border-gray-200 overflow-hidden';
     card.innerHTML =
-      '<div class="flex items-center justify-between mb-3"><span class="text-xs font-bold px-2 py-1 rounded bg-indigo-600 text-white">' + (label[v.versionName] || v.versionName) + '</span></div>' +
-      block('Hook', v.hook, true) +
-      block('Celý skript', v.spokenScript, true) +
-      block('CTA', v.cta) +
-      (ig.caption ? block('Caption', ig.caption) : '') +
-      (ig.hashtags && ig.hashtags.length ? block('Hashtagy', ig.hashtags.map(h => '#' + h).join(' ')) : '');
+      '<div class="px-6 py-3 bg-gray-50 border-b border-gray-100"><span class="text-xs font-bold px-2.5 py-1 rounded bg-indigo-600 text-white">' + (label[v.versionName] || v.versionName) + '</span></div>' +
+      '<div class="p-5 space-y-4">' +
+        section('🎣 Hook (prvá veta — zaujme)', v.hook, 'highlight') +
+        section('📝 Celý skript', v.spokenScript, 'script') +
+        section('👉 CTA (výzva na akciu)', v.cta, 'highlight') +
+        section('💬 Caption (popis pod video)', ig.caption, 'plain') +
+        hashtagSection(ig.hashtags) +
+      '</div>';
     box.appendChild(card);
   }
   box.scrollIntoView({ behavior: 'smooth' });
@@ -365,13 +372,29 @@ function renderVariants(variants) {
     setTimeout(() => b.textContent = 'Kopírovať', 1500);
   }));
 }
-function block(title, text, big) {
+function copyBtn(text) {
+  return '<button class="copy-b text-indigo-600 text-xs font-medium hover:underline shrink-0" data-text="' +
+    String(text).replace(/"/g, '&quot;') + '">Kopírovať</button>';
+}
+function section(title, text, style) {
   if (!text) return '';
   const esc = String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return '<div class="mb-3">' +
-    '<div class="flex items-center justify-between"><span class="text-[10px] font-semibold text-gray-400 uppercase">' + title + '</span>' +
-    '<button class="copy-b text-indigo-600 text-xs hover:underline" data-text="' + String(text).replace(/"/g,'&quot;') + '">Kopírovať</button></div>' +
-    '<p class="' + (big ? 'text-sm text-gray-900' : 'text-sm text-gray-700') + ' whitespace-pre-wrap mt-0.5">' + esc + '</p></div>';
+  const boxCls = style === 'highlight'
+    ? 'rounded-lg border border-indigo-100 bg-indigo-50/50 p-3'
+    : 'rounded-lg border border-gray-100 p-3';
+  const textCls = style === 'highlight' ? 'text-sm font-medium text-gray-900' : 'text-sm text-gray-800';
+  return '<div class="' + boxCls + '">' +
+    '<div class="flex items-center justify-between gap-2 mb-1"><span class="text-[11px] font-bold text-indigo-700 uppercase tracking-wide">' + title + '</span>' + copyBtn(text) + '</div>' +
+    '<p class="' + textCls + ' whitespace-pre-wrap leading-relaxed">' + esc + '</p></div>';
+}
+function hashtagSection(tags) {
+  if (!tags || !tags.length) return '';
+  const chips = tags.map(t => '<span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">#' +
+    String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span>').join('');
+  return '<div class="rounded-lg border border-gray-100 p-3">' +
+    '<div class="flex items-center justify-between gap-2 mb-2"><span class="text-[11px] font-bold text-indigo-700 uppercase tracking-wide"># Hashtagy</span>' +
+    copyBtn(tags.map(t => '#' + t).join(' ')) + '</div>' +
+    '<div class="flex flex-wrap gap-1.5">' + chips + '</div></div>';
 }
 
 $('gen-btn').addEventListener('click', async () => {
