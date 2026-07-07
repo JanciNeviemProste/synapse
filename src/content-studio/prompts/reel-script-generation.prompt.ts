@@ -70,6 +70,7 @@ ${
     ? `INŠPIRAČNÉ VZORY (len štruktúra/štýl — NIKDY nekopíruj formulácie):\n${input.inspirationPatterns.join('\n')}`
     : ''
 }
+DÔRAZ NA JAZYK: Celý text musí byť v 100 % gramaticky a pravopisne správnej spisovnej slovenčine (diakritika, interpunkcia, skloňovanie, časovanie, zhoda podmetu s prísudkom). Pred vrátením si text po sebe prekontroluj a oprav.
 ${ANTI_INJECTION_RULES}
 ${OUTPUT_RULES}
 ${jsonSchemaInstruction(SHAPE)}`,

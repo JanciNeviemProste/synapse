@@ -39,7 +39,7 @@ export class AiService {
       this.configService.get<string>('openrouter.apiKey') || '';
     this.openrouterModel =
       this.configService.get<string>('openrouter.model') ||
-      'anthropic/claude-sonnet-4.5';
+      'anthropic/claude-sonnet-5';
     this.model =
       this.configService.get<string>('anthropic.model') ||
       'claude-sonnet-4-20250514';

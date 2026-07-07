@@ -160,6 +160,19 @@ export const generatedScriptsSchema = z.object({
 export type GeneratedScripts = z.infer<typeof generatedScriptsSchema>;
 export type GeneratedScriptVariant = z.infer<typeof generatedScriptVariantSchema>;
 
+// ---- Slovak proofreading (grammar/spelling correction of a variant) ----
+
+export const proofreadFieldsSchema = z.object({
+  hook: z.string().default(''),
+  setup: z.string().default(''),
+  mainMessage: z.string().default(''),
+  keyInsight: z.string().default(''),
+  cta: z.string().default(''),
+  spokenScript: z.string().default(''),
+  caption: z.string().default(''),
+});
+export type ProofreadFields = z.infer<typeof proofreadFieldsSchema>;
+
 // ---- §21 Script review (all scores are AI estimates) ----
 
 const aiScore = z.number().min(0).max(10);

@@ -37,7 +37,7 @@ Modul je **odvetvovo neutrálny** — doménu (obor, publikum, tón, compliance)
 
 ## OpenRouter (od 2026-07-06)
 
-`AiService` podporuje tretí backend: `AI_PROVIDER=openrouter` + `OPENROUTER_API_KEY` (+ voliteľne `OPENROUTER_MODEL`, default `anthropic/claude-sonnet-4.5`). Auto priorita: Anthropic key → OpenRouter key → Claude CLI. Content Studio „anthropic" adapter beží nad AiService, takže OpenRouter automaticky poháňa aj všetky Content Studio textové workflow. Transkripcia a realtime voice ostávajú na `OPENAI_API_KEY` (OpenRouter Whisper/Realtime neponúka).
+`AiService` podporuje tretí backend: `AI_PROVIDER=openrouter` + `OPENROUTER_API_KEY` (+ voliteľne `OPENROUTER_MODEL`, default `anthropic/claude-sonnet-5`). Auto priorita: Anthropic key → OpenRouter key → Claude CLI. Content Studio „anthropic" adapter beží nad AiService, takže OpenRouter automaticky poháňa aj všetky Content Studio textové workflow. Transkripcia a realtime voice ostávajú na `OPENAI_API_KEY` (OpenRouter Whisper/Realtime neponúka).
 
 ## Mock mode
 

@@ -31,7 +31,7 @@ export default () => ({
 
   openrouter: {
     apiKey: process.env.OPENROUTER_API_KEY || '',
-    model: process.env.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4.5',
+    model: process.env.OPENROUTER_MODEL || 'anthropic/claude-sonnet-5',
   },
 
   groq: {

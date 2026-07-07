@@ -11,8 +11,10 @@ import {
   ExtractedIdeas,
   GeneratedContentPlan,
   GeneratedScripts,
+  GeneratedScriptVariant,
   InspirationPatterns,
   InterviewBrief,
+  ProofreadFields,
   ScriptReview,
   StyleMemoryAnalysis,
   complianceResultSchema,
@@ -23,6 +25,7 @@ import {
   inspirationPatternsSchema,
   interviewBriefSchema,
   interviewNextQuestionSchema,
+  proofreadFieldsSchema,
   scriptReviewSchema,
   styleMemoryAnalysisSchema,
 } from '../schemas/ai-output.schemas';
@@ -47,6 +50,7 @@ import { buildIdeaExtractionPrompt } from '../prompts/voice-idea-extraction.prom
 import { buildContentPillarsPrompt } from '../prompts/content-pillars.prompt';
 import { buildContentPlanPrompt } from '../prompts/content-plan-generation.prompt';
 import { buildScriptGenerationPrompt } from '../prompts/reel-script-generation.prompt';
+import { buildProofreadPrompt } from '../prompts/slovak-proofread.prompt';
 import { buildScriptReviewPrompt } from '../prompts/reel-script-review.prompt';
 import { buildComplianceCheckPrompt } from '../prompts/compliance-check.prompt';
 import {
@@ -71,6 +75,33 @@ import {
   VideoUnderstandingInput,
   VideoUnderstandingProvider,
 } from './provider.interfaces';
+
+/**
+ * Apply proofread corrections back onto a variant — only the text fields,
+ * everything else (production plan, hashtags, safety) untouched. A corrected
+ * field is used only when non-empty, so a dropped field never blanks the
+ * original. Pure — unit tested.
+ */
+export function mergeProofread(
+  variant: GeneratedScriptVariant,
+  corrected: ProofreadFields,
+): GeneratedScriptVariant {
+  const pick = (orig: string, fixed: string) =>
+    fixed && fixed.trim() ? fixed : orig;
+  return {
+    ...variant,
+    hook: pick(variant.hook, corrected.hook),
+    setup: pick(variant.setup, corrected.setup),
+    mainMessage: pick(variant.mainMessage, corrected.mainMessage),
+    keyInsight: pick(variant.keyInsight, corrected.keyInsight),
+    cta: pick(variant.cta, corrected.cta),
+    spokenScript: pick(variant.spokenScript, corrected.spokenScript),
+    instagramAssets: {
+      ...variant.instagramAssets,
+      caption: pick(variant.instagramAssets.caption, corrected.caption),
+    },
+  };
+}
 
 /**
  * Anthropic-backed provider (via the existing AiService, which itself
@@ -186,9 +217,49 @@ export class AnthropicContentProvider
     return this.generateValidated(styleMemoryAnalysisSchema, system, user, 'style-memory');
   }
 
-  generateScripts(input: ScriptGenerationInput): Promise<GeneratedScripts> {
+  async generateScripts(input: ScriptGenerationInput): Promise<GeneratedScripts> {
     const { system, user } = buildScriptGenerationPrompt(input);
-    return this.generateValidated(generatedScriptsSchema, system, user, 'generate-scripts');
+    const generated = await this.generateValidated(
+      generatedScriptsSchema,
+      system,
+      user,
+      'generate-scripts',
+    );
+    // Always run a Slovak proofreading pass so grammar/spelling is clean.
+    const variants = await Promise.all(
+      generated.variants.map((v) => this.proofreadVariant(v)),
+    );
+    return { variants };
+  }
+
+  /** Correct the Slovak of one variant; best-effort — keep original on failure. */
+  private async proofreadVariant(
+    variant: GeneratedScriptVariant,
+  ): Promise<GeneratedScriptVariant> {
+    const fields: ProofreadFields = {
+      hook: variant.hook,
+      setup: variant.setup,
+      mainMessage: variant.mainMessage,
+      keyInsight: variant.keyInsight,
+      cta: variant.cta,
+      spokenScript: variant.spokenScript,
+      caption: variant.instagramAssets.caption,
+    };
+    try {
+      const { system, user } = buildProofreadPrompt(fields);
+      const corrected = await this.generateValidated(
+        proofreadFieldsSchema,
+        system,
+        user,
+        'slovak-proofread',
+      );
+      return mergeProofread(variant, corrected);
+    } catch (error) {
+      this.logger.warn(
+        `slovak-proofread skipped for variant ${variant.versionName}: ${(error as Error).message}`,
+      );
+      return variant;
+    }
   }
 
   reviewScript(input: ScriptReviewInput): Promise<ScriptReview> {
