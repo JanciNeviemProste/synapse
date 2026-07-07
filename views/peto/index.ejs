@@ -284,7 +284,7 @@ async function sendAudio(blobOrFile, name) {
   form.append('audio', blobOrFile, blobOrFile.name || name);
   try {
     const res = await fetch('/api/peto/transcribe', { method: 'POST', body: form });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status));
     const data = await res.json();
     $('transcript').value = data.text || '';
     status.className = 'text-sm mb-2 text-green-600';
