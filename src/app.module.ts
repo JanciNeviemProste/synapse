@@ -17,6 +17,7 @@ import { BookingModule } from './booking/booking.module';
 import { FigmaModule } from './figma/figma.module';
 import { ClonerModule } from './cloner/cloner.module';
 import { ContentStudioModule } from './content-studio/content-studio.module';
+import { PetoModule } from './peto/peto.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ContentStudioModule } from './content-studio/content-studio.module';
     FigmaModule,
     ClonerModule,
     ContentStudioModule,
+    PetoModule,
   ],
 })
 export class AppModule {}

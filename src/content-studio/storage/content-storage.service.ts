@@ -41,7 +41,9 @@ export class ContentStorageService {
   }
 
   validate(category: StorageCategory, mimeType: string, sizeBytes: number): string | null {
-    if (!ALLOWED_MIME[category].includes(mimeType)) {
+    // Browsers record as e.g. "audio/webm;codecs=opus" — compare the base type only.
+    const baseType = (mimeType || '').split(';')[0].trim().toLowerCase();
+    if (!ALLOWED_MIME[category].includes(baseType)) {
       return `Nepodporovaný typ súboru: ${mimeType}`;
     }
     const maxMb =
@@ -63,7 +65,8 @@ export class ContentStorageService {
     if (error) {
       throw new Error(error);
     }
-    const ext = EXTENSION_BY_MIME[mimeType] || 'bin';
+    const baseType = mimeType.split(';')[0].trim().toLowerCase();
+    const ext = EXTENSION_BY_MIME[baseType] || 'bin';
     const relPath = join(category, `${randomUUID()}.${ext}`);
     const absPath = join(this.rootDir, relPath);
     await mkdir(join(this.rootDir, category), { recursive: true });

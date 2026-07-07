@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AnthropicContentProvider } from './anthropic.provider';
 import { MockContentProvider } from './mock.provider';
+import { GroqTranscriptionProvider } from './groq-transcription.provider';
 import { OpenAiRealtimeProvider } from './openai-realtime.provider';
 import { OpenAiTranscriptionProvider } from './openai-transcription.provider';
 import {
@@ -15,7 +16,7 @@ import {
   VideoUnderstandingProvider,
 } from './provider.interfaces';
 
-export type ProviderKind = 'anthropic' | 'openai' | 'mock';
+export type ProviderKind = 'anthropic' | 'openai' | 'groq' | 'mock';
 export type ProviderRole =
   | 'strategy'
   | 'script'
@@ -33,15 +34,21 @@ export type ProviderRole =
 export function resolveProviderKind(
   configured: string,
   role: ProviderRole,
-  creds: { anthropic: boolean; openai: boolean },
+  creds: { anthropic: boolean; openai: boolean; groq: boolean },
 ): ProviderKind {
   const normalized = (configured || 'auto').toLowerCase();
   if (normalized === 'mock') return 'mock';
   if (normalized === 'anthropic') return creds.anthropic ? 'anthropic' : 'mock';
+  if (normalized === 'groq') return creds.groq ? 'groq' : 'mock';
   if (normalized === 'openai') return creds.openai ? 'openai' : 'mock';
 
   // auto
-  if (role === 'transcription' || role === 'realtime') {
+  if (role === 'transcription') {
+    // Groq Whisper (free) preferred, then OpenAI Whisper, else mock.
+    if (creds.groq) return 'groq';
+    return creds.openai ? 'openai' : 'mock';
+  }
+  if (role === 'realtime') {
     return creds.openai ? 'openai' : 'mock';
   }
   return creds.anthropic ? 'anthropic' : 'mock';
@@ -57,9 +64,10 @@ export class ContentProviderFactory {
     private readonly mockProvider: MockContentProvider,
     private readonly openaiTranscription: OpenAiTranscriptionProvider,
     private readonly openaiRealtime: OpenAiRealtimeProvider,
+    private readonly groqTranscription: GroqTranscriptionProvider,
   ) {}
 
-  private creds(): { anthropic: boolean; openai: boolean } {
+  private creds(): { anthropic: boolean; openai: boolean; groq: boolean } {
     const anthropicKey =
       this.configService.get<string>('anthropic.apiKey') || '';
     const openrouterKey =
@@ -70,6 +78,7 @@ export class ContentProviderFactory {
       // Anthropic key, OpenRouter key, or explicit Claude CLI all qualify.
       anthropic: !!anthropicKey || !!openrouterKey || aiProvider === 'claude-cli',
       openai: !!this.configService.get<string>('contentStudio.openaiApiKey'),
+      groq: !!this.configService.get<string>('groq.apiKey'),
     };
   }
 
@@ -105,9 +114,10 @@ export class ContentProviderFactory {
   }
 
   getTranscriptionProvider(): TranscriptionProvider {
-    return this.kindFor('transcription', 'contentStudio.transcriptionProvider') === 'openai'
-      ? this.openaiTranscription
-      : this.mockProvider;
+    const kind = this.kindFor('transcription', 'contentStudio.transcriptionProvider');
+    if (kind === 'groq') return this.groqTranscription;
+    if (kind === 'openai') return this.openaiTranscription;
+    return this.mockProvider;
   }
 
   getRealtimeProvider(): RealtimeVoiceProvider {

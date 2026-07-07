@@ -34,6 +34,12 @@ export default () => ({
     model: process.env.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4.5',
   },
 
+  groq: {
+    apiKey: process.env.GROQ_API_KEY || '',
+    transcriptionModel:
+      process.env.GROQ_TRANSCRIPTION_MODEL || 'whisper-large-v3-turbo',
+  },
+
   figma: {
     accessToken: process.env.FIGMA_ACCESS_TOKEN || '',
   },

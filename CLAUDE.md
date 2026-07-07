@@ -14,7 +14,7 @@ Interný „agency OS" pre Synapse Studio. Single-tenant, jediný používateľ 
 ## Architektúra
 Jeden NestJS proces: EJS SSR dashboard + Telegram bot + crony. Dashboard/kanban servuje `src/leads/leads.controller.ts` (route `/`). Telegram router `src/telegram/telegram.update.ts` — moduly si registrujú handlery. AI cez `src/ai/ai.service.ts` (Anthropic SDK / Claude CLI fallback).
 
-Moduly: `auth` (login + globálne gardy), `leads`, `coder`, `research`, `tracking`, `booking`, `figma`, `cloner`, `gmail`, `images`, `telegram`, `ai`, `database`, `common`. Vo výstavbe: `content-studio` (viď nižšie).
+Moduly: `auth` (login + globálne gardy), `leads`, `coder`, `research`, `tracking`, `booking`, `figma`, `cloner`, `gmail`, `images`, `telegram`, `ai`, `database`, `common`, `content-studio` (viď nižšie), `peto` (Peťové Studio — zjednodušený voice→skripty flow, izolovaný, viď nižšie).
 
 ## Content Studio (od 2026-07-06, fázy CS-1..CS-8 hotové)
 - Spec: `docs/content-studio/SPEC.md` · architektúra + limity + V2 roadmap: `docs/content-studio/ARCHITECTURE.md` · adaptačné ADR: `docs/DECISIONS.md` (2026-07-06).
@@ -23,6 +23,12 @@ Moduly: `auth` (login + globálne gardy), `leads`, `coder`, `research`, `trackin
 - **Odvetvovo neutrálny** (od 2026-07-06): žiadny obor nie je zadrôtovaný, doménu (obor/publikum/tón/compliance) riadi výhradne Brand DNA (`/content-studio/settings`). Compliance prompt univerzálny, reguláciu aplikuje podľa odvetvia značky.
 - Provider architektúra: interfaces v `src/content-studio/providers/`; adaptery anthropic (nad `AiService`) / openai (fetch, bez SDK) / mock; výber cez env `*_PROVIDER` (auto = reálny len s credentials). Nové env mená viď ARCHITECTURE.md.
 - **Čaká na DB:** migrácia `content_studio_init` sa vytvorí až PO baseline (fáza 4). Runtime nikdy nebežal (DB down). FFmpeg pridaný do Dockerfile.
+
+## Peťové Studio (od 2026-07-07, `src/peto/`)
+- Zjednodušený flow pre klienta „Peťo": nahrá hlasovku → prepis (Groq Whisper) → svoj brand DNA + šablóny → 3 prehľadné Reel skripty. Jedna stránka `/peto`, žiadne piliere/plány/schvaľovanie.
+- **Izolovaný**: vlastné lean tabuľky `PetoBrand`/`PetoTemplate`/`PetoScript` (migrácia `peto_studio`), Content Studio sa ich nedotýka. Znovupoužíva AI vrstvu cez `ContentProviderFactory` (transcription + script provider).
+- **Prepis hlasu = Groq** (`TRANSCRIPTION_PROVIDER=groq` + `GROQ_API_KEY`, zdarma; `whisper-large-v3-turbo`). OpenRouter audio nevie. Bez kľúča → mock prepis. Groq factory rozlíšenie: auto uprednostní groq → openai → mock (aj Content Studio voice z toho ťaží).
+- Rovnaký admin login ako zvyšok (jeden ADMIN_PASSWORD), samostatné prihlásenie pre Peťa mimo rozsah.
 
 ## Auth model (od 2026-07-05)
 - **Nová routa = admin by default.** Globálny `APP_GUARD`: ThrottlerGuard → AuthGuard (`src/auth/auth.module.ts`).
@@ -33,7 +39,7 @@ Moduly: `auth` (login + globálne gardy), `leads`, `coder`, `research`, `trackin
 - Statické `/output/*` a `/public/*` sú verejné by design (cloner preview zdieľaný prospektom).
 
 ## Env vars (mená; hodnoty len v .env / Railway — NIKDY do gitu)
-`DATABASE_URL`, `DIRECT_URL`, `ADMIN_PASSWORD`, `PORT`, `APP_URL`, `AI_PROVIDER` (auto|anthropic|openrouter|claude-cli), `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` (default anthropic/claude-sonnet-4.5), `TELEGRAM_BOT_TOKEN`, `TELEGRAM_OWNER_CHAT_ID`, `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, `GMAIL_USER_EMAIL`, `GOOGLE_CALENDAR_ID`, `GITHUB_TOKEN`, `GITHUB_USERNAME`, `VERCEL_TOKEN`, `FIGMA_ACCESS_TOKEN`, `FIGMA_CRON_INTERVAL`, `LEAD_CRON_INTERVAL`, `LEAD_MIN_CONFIDENCE`, `UNSPLASH_ACCESS_KEY`, `PEXELS_API_KEY`.
+`DATABASE_URL`, `DIRECT_URL`, `ADMIN_PASSWORD`, `PORT`, `APP_URL`, `AI_PROVIDER` (auto|anthropic|openrouter|claude-cli), `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` (default anthropic/claude-sonnet-4.5), `GROQ_API_KEY`, `GROQ_TRANSCRIPTION_MODEL` (default whisper-large-v3-turbo), `TRANSCRIPTION_PROVIDER` (auto|groq|openai|mock), `TELEGRAM_BOT_TOKEN`, `TELEGRAM_OWNER_CHAT_ID`, `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, `GMAIL_USER_EMAIL`, `GOOGLE_CALENDAR_ID`, `GITHUB_TOKEN`, `GITHUB_USERNAME`, `VERCEL_TOKEN`, `FIGMA_ACCESS_TOKEN`, `FIGMA_CRON_INTERVAL`, `LEAD_CRON_INTERVAL`, `LEAD_MIN_CONFIDENCE`, `UNSPLASH_ACCESS_KEY`, `PEXELS_API_KEY`.
 
 ## NEDOTÝKAŤ SA (bez explicitného GO)
 - `src/leads/**` + `src/gmail/**` — produkčný lead pipeline, živé dáta.

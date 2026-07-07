@@ -699,3 +699,56 @@ enum DnaRuleStatus {
   REJECTED
   DEACTIVATED
 }
+
+// ==================== PEŤOVÉ STUDIO (zjednodušený voice → skripty flow) ====================
+// Izolované od Content Studia — vlastné lean tabuľky, Content Studio sa ich nedotýka.
+
+model PetoBrand {
+  id                 String   @id @default(uuid())
+  brandName          String
+  industry           String?
+  targetAudience     String?  @db.Text
+  communicationStyle String?  @db.Text
+  addressing         String   @default("tykanie")
+  preferredPhrases   Json?
+  forbiddenPhrases   Json?
+  requiredCtas       Json?
+  notes              String?  @db.Text
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model PetoTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String?  @db.Text
+  structure   String?  @db.Text
+  hookPattern String?  @db.Text
+  ctaPattern  String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([createdAt])
+}
+
+model PetoScript {
+  id               String   @id @default(uuid())
+  batchId          String
+  sourceTranscript String?  @db.Text
+  topic            String?
+  versionName      String   @default("A")
+  hook             String?  @db.Text
+  setup            String?  @db.Text
+  mainMessage      String?  @db.Text
+  keyInsight       String?  @db.Text
+  cta              String?  @db.Text
+  spokenScript     String?  @db.Text
+  productionPlan   Json?
+  instagramAssets  Json?
+  safety           Json?
+  createdAt        DateTime @default(now())
+
+  @@index([batchId])
+  @@index([createdAt])
+}

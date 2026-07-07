@@ -7,6 +7,7 @@ import { IntelligenceService } from './intelligence/intelligence.service';
 import { MediaService } from './intelligence/media.service';
 import { ContentJobsService } from './jobs/content-jobs.service';
 import { AnthropicContentProvider } from './providers/anthropic.provider';
+import { GroqTranscriptionProvider } from './providers/groq-transcription.provider';
 import { MockContentProvider } from './providers/mock.provider';
 import { OpenAiRealtimeProvider } from './providers/openai-realtime.provider';
 import { OpenAiTranscriptionProvider } from './providers/openai-transcription.provider';
@@ -32,6 +33,7 @@ import { ContentStorageService } from './storage/content-storage.service';
     MockContentProvider,
     OpenAiTranscriptionProvider,
     OpenAiRealtimeProvider,
+    GroqTranscriptionProvider,
     ContentProviderFactory,
     ContentStorageService,
     ContentJobsService,

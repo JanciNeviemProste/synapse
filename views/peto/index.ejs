@@ -1,0 +1,309 @@
+<%- include('../layouts/header', { title: 'Peťové Studio', currentPath: '/peto' }) %>
+
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-gray-900">Peťové Studio</h1>
+  <p class="text-sm text-gray-500 mt-1">Nahraj hlasovku → prepíše sa → vypadnú hotové skripty. Nič viac.</p>
+</div>
+
+<!-- KROK 1: Môj brand -->
+<details class="bg-white rounded-xl border border-gray-200 mb-4" <%= brand ? '' : 'open' %>>
+  <summary class="cursor-pointer select-none px-6 py-4 flex items-center justify-between">
+    <span class="font-semibold text-gray-900"><span class="text-indigo-600">1.</span> Môj brand <span class="text-xs font-normal text-gray-400">(nastav raz)</span></span>
+    <span class="text-xs px-2 py-0.5 rounded-full <%= brand ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700' %>"><%= brand ? '✓ ' + brand.brandName : 'nevyplnené' %></span>
+  </summary>
+  <div class="px-6 pb-6 border-t border-gray-100 pt-4">
+    <form id="brand-form" class="space-y-3">
+      <% const arr = (v) => Array.isArray(v) ? v.join('\n') : ''; %>
+      <input name="brandName" required maxlength="200" placeholder="Názov značky / meno *" value="<%= brand ? brand.brandName : '' %>" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+      <div class="grid sm:grid-cols-2 gap-2">
+        <input name="industry" maxlength="200" placeholder="Čím sa zaoberáš (odvetvie)" value="<%= brand && brand.industry ? brand.industry : '' %>" class="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+        <select name="addressing" class="rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white">
+          <option value="tykanie" <%= brand && brand.addressing === 'tykanie' ? 'selected' : '' %>>Tykám divákom</option>
+          <option value="vykanie" <%= brand && brand.addressing === 'vykanie' ? 'selected' : '' %>>Vykám divákom</option>
+        </select>
+      </div>
+      <textarea name="targetAudience" rows="2" maxlength="2000" placeholder="Pre koho tvoríš (cieľové publikum)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"><%= brand && brand.targetAudience ? brand.targetAudience : '' %></textarea>
+      <textarea name="communicationStyle" rows="2" maxlength="2000" placeholder="Ako komunikuješ (tón, štýl — napr. priateľsky, odborne, vtipne)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"><%= brand && brand.communicationStyle ? brand.communicationStyle : '' %></textarea>
+      <div class="grid sm:grid-cols-2 gap-2">
+        <textarea name="preferredPhrases" rows="2" placeholder="Frázy, ktoré rád používaš (1 na riadok)" class="rounded-lg border border-gray-300 px-3 py-2 text-sm"><%= brand ? arr(brand.preferredPhrases) : '' %></textarea>
+        <textarea name="forbiddenPhrases" rows="2" placeholder="Čomu sa vyhnúť (1 na riadok)" class="rounded-lg border border-gray-300 px-3 py-2 text-sm"><%= brand ? arr(brand.forbiddenPhrases) : '' %></textarea>
+      </div>
+      <textarea name="requiredCtas" rows="2" placeholder="Tvoje výzvy na akciu / CTA (1 na riadok)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"><%= brand ? arr(brand.requiredCtas) : '' %></textarea>
+      <div class="flex items-center gap-3">
+        <button class="px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">Uložiť brand</button>
+        <span id="brand-saved" class="hidden text-sm text-green-600">Uložené ✓</span>
+      </div>
+    </form>
+  </div>
+</details>
+
+<!-- KROK 2: Moje šablóny -->
+<details class="bg-white rounded-xl border border-gray-200 mb-4">
+  <summary class="cursor-pointer select-none px-6 py-4 flex items-center justify-between">
+    <span class="font-semibold text-gray-900"><span class="text-indigo-600">2.</span> Moje šablóny <span class="text-xs font-normal text-gray-400">(voliteľné)</span></span>
+    <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600"><%= templates.length %> vlastných</span>
+  </summary>
+  <div class="px-6 pb-6 border-t border-gray-100 pt-4">
+    <% if (templates.length) { %>
+    <ul class="divide-y divide-gray-100 mb-4">
+      <% for (const t of templates) { %>
+      <li class="py-2.5 flex items-start justify-between gap-2">
+        <div class="min-w-0">
+          <span class="text-sm font-medium text-gray-900"><%= t.name %></span>
+          <% if (t.description) { %><p class="text-xs text-gray-500"><%= t.description %></p><% } %>
+        </div>
+        <button class="tpl-del text-red-500 hover:text-red-700 text-xs shrink-0" data-id="<%= t.id %>">Zmazať</button>
+      </li>
+      <% } %>
+    </ul>
+    <% } %>
+    <form id="tpl-form" class="space-y-2 border-t border-gray-100 pt-4">
+      <input name="name" required maxlength="200" placeholder="Názov šablóny *" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+      <input name="description" maxlength="2000" placeholder="Krátky popis" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+      <textarea name="structure" rows="3" maxlength="4000" placeholder="Ako má skript vyzerať? (napr.: začni otázkou, potom príbeh, na konci výzva sledovať)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></textarea>
+      <button class="px-4 py-2 bg-white border border-indigo-300 text-indigo-700 text-sm font-semibold rounded-lg hover:bg-indigo-50">Pridať šablónu</button>
+    </form>
+    <% if (starters && starters.length) { %>
+    <div class="mt-4 pt-3 border-t border-gray-100">
+      <p class="text-xs text-gray-400 mb-1">Inšpirácia (osvedčené formáty, ktoré vieš použiť pri generovaní bez pridávania):</p>
+      <div class="flex flex-wrap gap-1.5">
+        <% for (const s of starters) { %><span class="text-[11px] px-2 py-1 rounded-full bg-gray-100 text-gray-600" title="<%= s.description %>"><%= s.name %></span><% } %>
+      </div>
+    </div>
+    <% } %>
+  </div>
+</details>
+
+<!-- KROK 3: Hlasovka -->
+<div class="bg-white rounded-xl border border-gray-200 mb-4 p-6">
+  <h2 class="font-semibold text-gray-900 mb-1"><span class="text-indigo-600">3.</span> Nahraj hlasovku</h2>
+  <p class="text-xs text-gray-400 mb-4">Nahovor svoju myšlienku alebo nahraj audio súbor. Prepíše sa na text, ktorý si môžeš upraviť.</p>
+
+  <div class="grid sm:grid-cols-2 gap-4 mb-4">
+    <!-- Recorder -->
+    <div class="flex flex-col items-center gap-3 border border-gray-100 rounded-lg p-4">
+      <div id="rec-state" class="text-xs font-medium uppercase tracking-wide text-gray-400">Pripravené</div>
+      <div id="rec-time" class="text-2xl font-mono text-gray-900">00:00</div>
+      <div class="flex items-center gap-2">
+        <button id="rec-start" class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">● Nahrávať</button>
+        <button id="rec-stop" class="hidden px-4 py-2 bg-gray-900 text-white text-sm font-semibold rounded-lg">■ Ukončiť</button>
+      </div>
+      <audio id="rec-playback" controls class="hidden w-full"></audio>
+    </div>
+    <!-- Upload -->
+    <div class="flex flex-col justify-center gap-2 border border-gray-100 rounded-lg p-4">
+      <label class="text-xs text-gray-500">alebo nahraj audio súbor</label>
+      <input type="file" id="audio-file" accept="audio/*" class="w-full text-sm text-gray-600 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 file:text-sm file:font-medium">
+      <button id="upload-btn" class="px-4 py-2 bg-white border border-indigo-300 text-indigo-700 text-sm font-semibold rounded-lg hover:bg-indigo-50">Prepísať súbor</button>
+    </div>
+  </div>
+
+  <div id="transcribe-status" class="hidden text-sm mb-2"></div>
+  <label class="text-xs text-gray-500">Prepis (uprav podľa potreby):</label>
+  <textarea id="transcript" rows="5" maxlength="20000" placeholder="Tu sa objaví prepis hlasovky. Môžeš aj rovno napísať text." class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-1"></textarea>
+</div>
+
+<!-- KROK 4: Generovanie -->
+<div class="bg-white rounded-xl border border-gray-200 mb-8 p-6">
+  <h2 class="font-semibold text-gray-900 mb-3"><span class="text-indigo-600">4.</span> Vygeneruj skripty</h2>
+  <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+    <label class="flex-1 text-xs text-gray-500">Šablóna (voliteľné)
+      <select id="gen-template" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-0.5 bg-white">
+        <option value="">— bez šablóny —</option>
+        <% for (const t of templates) { %><option value="<%= t.id %>"><%= t.name %></option><% } %>
+      </select>
+    </label>
+    <button id="gen-btn" class="px-6 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">✨ Vygenerovať 3 skripty</button>
+  </div>
+  <p class="text-xs text-gray-400 mt-2">Vygenerujú sa 3 varianty (A profesionálny · B príbeh · C najsilnejší hook). Trvá to ~1–2 minúty.</p>
+</div>
+
+<!-- Výsledky -->
+<div id="results" class="space-y-6 mb-10"></div>
+
+<!-- História -->
+<div class="bg-white rounded-xl border border-gray-200 p-6">
+  <h2 class="font-semibold text-gray-900 mb-4">História</h2>
+  <div id="history">
+    <% if (!batches.length) { %><p class="text-sm text-gray-400">Zatiaľ žiadne vygenerované skripty.</p><% } %>
+    <% for (const b of batches) { %>
+    <div class="border border-gray-100 rounded-lg p-3 mb-2 flex items-center justify-between gap-2">
+      <div class="min-w-0">
+        <span class="text-sm font-medium text-gray-900 truncate block"><%= b.topic || 'Skript' %></span>
+        <span class="text-xs text-gray-400"><%= new Date(b.createdAt).toLocaleString('sk-SK') %> · <%= b.variants.length %> varianty</span>
+      </div>
+      <div class="flex items-center gap-2 shrink-0 text-xs">
+        <button class="batch-show text-indigo-600 hover:underline" data-id="<%= b.batchId %>">Zobraziť</button>
+        <button class="batch-del text-red-500 hover:text-red-700" data-id="<%= b.batchId %>">Zmazať</button>
+      </div>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+// ---- Brand ----
+const lines = (v) => v.split('\n').map(s => s.trim()).filter(Boolean);
+$('brand-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const res = await fetch('/api/peto/brand', {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      brandName: f.get('brandName'),
+      industry: f.get('industry') || undefined,
+      targetAudience: f.get('targetAudience') || undefined,
+      communicationStyle: f.get('communicationStyle') || undefined,
+      addressing: f.get('addressing'),
+      preferredPhrases: lines(f.get('preferredPhrases') || ''),
+      forbiddenPhrases: lines(f.get('forbiddenPhrases') || ''),
+      requiredCtas: lines(f.get('requiredCtas') || ''),
+    }),
+  });
+  if (res.ok) { $('brand-saved').classList.remove('hidden'); setTimeout(() => location.reload(), 800); }
+  else alert('Uloženie zlyhalo');
+});
+
+// ---- Templates ----
+$('tpl-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const res = await fetch('/api/peto/templates', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: f.get('name'), description: f.get('description') || undefined, structure: f.get('structure') || undefined }),
+  });
+  if (res.ok) location.reload(); else alert('Uloženie zlyhalo');
+});
+document.querySelectorAll('.tpl-del').forEach(b => b.addEventListener('click', async () => {
+  if (!confirm('Zmazať šablónu?')) return;
+  const res = await fetch('/api/peto/templates/' + b.dataset.id, { method: 'DELETE' });
+  if (res.ok) location.reload();
+}));
+
+// ---- Recorder ----
+(() => {
+  let mediaRecorder = null, chunks = [], timer = null, seconds = 0, recording = false;
+  const fmt = (n) => String(Math.floor(n/60)).padStart(2,'0') + ':' + String(n%60).padStart(2,'0');
+  $('rec-start').addEventListener('click', async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream); chunks = []; seconds = 0; recording = true;
+      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(chunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+        $('rec-playback').src = URL.createObjectURL(blob);
+        $('rec-playback').classList.remove('hidden');
+        sendAudio(blob, 'nahravka.webm');
+      };
+      mediaRecorder.start();
+      timer = setInterval(() => { seconds++; $('rec-time').textContent = fmt(seconds); }, 1000);
+      $('rec-state').textContent = 'Nahrávam 🔴'; $('rec-state').className = 'text-xs font-medium uppercase tracking-wide text-red-600';
+      $('rec-start').classList.add('hidden'); $('rec-stop').classList.remove('hidden');
+    } catch { alert('Mikrofón nie je dostupný alebo bol zamietnutý.'); }
+  });
+  $('rec-stop').addEventListener('click', () => {
+    if (!recording) return;
+    recording = false; clearInterval(timer); mediaRecorder.stop();
+    $('rec-state').textContent = 'Prepisujem…'; $('rec-state').className = 'text-xs font-medium uppercase tracking-wide text-gray-400';
+    $('rec-start').classList.remove('hidden'); $('rec-stop').classList.add('hidden');
+  });
+})();
+
+$('upload-btn').addEventListener('click', () => {
+  const file = $('audio-file').files[0];
+  if (!file) { alert('Vyber audio súbor.'); return; }
+  sendAudio(file, file.name);
+});
+
+async function sendAudio(blobOrFile, name) {
+  const status = $('transcribe-status');
+  status.classList.remove('hidden');
+  status.className = 'text-sm mb-2 text-gray-600';
+  status.textContent = 'Prepisujem hlasovku…';
+  const form = new FormData();
+  form.append('audio', blobOrFile, blobOrFile.name || name);
+  try {
+    const res = await fetch('/api/peto/transcribe', { method: 'POST', body: form });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    $('transcript').value = data.text || '';
+    status.className = 'text-sm mb-2 text-green-600';
+    status.textContent = 'Prepísané ✓ — skontroluj text nižšie a generuj.';
+    $('rec-state').textContent = 'Hotovo';
+  } catch (err) {
+    status.className = 'text-sm mb-2 text-red-600';
+    status.textContent = 'Prepis zlyhal: ' + err.message;
+  }
+}
+
+// ---- Generate ----
+function renderVariants(variants) {
+  const box = $('results');
+  box.innerHTML = '<h2 class="text-lg font-bold text-gray-900">Tvoje skripty</h2>';
+  const label = { A: 'A · Profesionálny', B: 'B · Príbeh', C: 'C · Najsilnejší hook' };
+  for (const v of variants) {
+    const ig = v.instagramAssets || {};
+    const card = document.createElement('div');
+    card.className = 'bg-white rounded-xl border border-gray-200 p-6';
+    card.innerHTML =
+      '<div class="flex items-center justify-between mb-3"><span class="text-xs font-bold px-2 py-1 rounded bg-indigo-600 text-white">' + (label[v.versionName] || v.versionName) + '</span></div>' +
+      block('Hook', v.hook, true) +
+      block('Celý skript', v.spokenScript, true) +
+      block('CTA', v.cta) +
+      (ig.caption ? block('Caption', ig.caption) : '') +
+      (ig.hashtags && ig.hashtags.length ? block('Hashtagy', ig.hashtags.map(h => '#' + h).join(' ')) : '');
+    box.appendChild(card);
+  }
+  box.scrollIntoView({ behavior: 'smooth' });
+  box.querySelectorAll('.copy-b').forEach(b => b.addEventListener('click', () => {
+    navigator.clipboard.writeText(b.dataset.text); b.textContent = 'Skopírované ✓';
+    setTimeout(() => b.textContent = 'Kopírovať', 1500);
+  }));
+}
+function block(title, text, big) {
+  if (!text) return '';
+  const esc = String(text).replace(/</g, '&lt;');
+  return '<div class="mb-3">' +
+    '<div class="flex items-center justify-between"><span class="text-[10px] font-semibold text-gray-400 uppercase">' + title + '</span>' +
+    '<button class="copy-b text-indigo-600 text-xs hover:underline" data-text="' + String(text).replace(/"/g,'&quot;') + '">Kopírovať</button></div>' +
+    '<p class="' + (big ? 'text-sm text-gray-900' : 'text-sm text-gray-700') + ' whitespace-pre-wrap mt-0.5">' + esc + '</p></div>';
+}
+
+$('gen-btn').addEventListener('click', async () => {
+  const transcript = $('transcript').value.trim();
+  if (!transcript) { alert('Najprv nahraj hlasovku alebo napíš text.'); return; }
+  const btn = $('gen-btn');
+  btn.disabled = true; btn.textContent = '✨ Generujem…';
+  try {
+    const res = await fetch('/api/peto/generate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcript, templateId: $('gen-template').value || undefined }),
+    });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status));
+    const batch = await res.json();
+    renderVariants(batch.variants);
+  } catch (err) {
+    alert('Generovanie zlyhalo: ' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '✨ Vygenerovať 3 skripty';
+  }
+});
+
+// ---- History ----
+document.querySelectorAll('.batch-show').forEach(b => b.addEventListener('click', async () => {
+  const res = await fetch('/api/peto/batches');
+  const batches = await res.json();
+  const batch = batches.find(x => x.batchId === b.dataset.id);
+  if (batch) renderVariants(batch.variants);
+}));
+document.querySelectorAll('.batch-del').forEach(b => b.addEventListener('click', async () => {
+  if (!confirm('Zmazať túto sadu skriptov?')) return;
+  const res = await fetch('/api/peto/batches/' + b.dataset.id, { method: 'DELETE' });
+  if (res.ok) location.reload();
+}));
+</script>
+
+<%- include('../layouts/footer') %>

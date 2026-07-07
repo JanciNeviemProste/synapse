@@ -1,5 +1,8 @@
 # DECISIONS.md — ADR log
 
+## 2026-07-07 — Peťové Studio: izolovaný zjednodušený flow + Groq STT
+Klient „Peťo" chce ultra-jednoduchý nástroj (hlasovka → prepis → skripty), bez zložitosti Content Studia. Rozhodnutie: samostatný modul `src/peto/` s vlastnými lean tabuľkami (`PetoBrand`/`PetoTemplate`/`PetoScript`) — **plne izolovaný** od Content Studia (nulový blast radius), ale znovupoužíva AI vrstvu cez `ContentProviderFactory`. Prepis hlasu cez **Groq Whisper** (`whisper-large-v3-turbo`, free tier) — OpenRouter audio nevie, Groq je OpenAI-kompatibilný a zadarmo; factory transcription auto-priorita groq→openai→mock. Zamietnuté: (a) `space`/workspace tag naprieč Content Studio službami (väčší blast radius); (b) zdieľanie dát s Content Studiom (Peťo by prepísal Jančiho brand); (c) OpenAI Whisper ako default (Groq zadarmo). Peťo používa rovnaký admin login (multi-user mimo rozsah).
+
 ## 2026-07-06 — Neon.tech namiesto Supabase, čistý štart
 Supabase free-tier projekt sa po nečinnosti pauzol a stal sa neobnoviteľne nedostupným (`tenant/user not found`). Prechod na Neon: čistý Postgres (žiadne Supabase featury sa nepoužívali), auto-wake pri prvom pripojení (~500 ms), scale-to-zero. Rozhodnutie Jančiho: čistý štart bez záchrany starých leadov. Implementácia: `directUrl` v schema.prisma (pooler nepodporuje DDL), init migrácia `20260706203034_init` (27 tabuliek, CREATE-only), `prisma migrate deploy` pri každom Docker boote. Zamietnuté: obnova Supabase + pg_dump migrácia dát.
 
