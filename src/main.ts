@@ -1,3 +1,9 @@
+// Load .env FIRST and let it override any stale shell/system environment
+// variables (e.g. a leftover OPENROUTER_API_KEY exported in the shell would
+// otherwise shadow the .env value and cause auth failures).
+import * as dotenv from 'dotenv';
+dotenv.config({ override: true });
+
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, Logger } from '@nestjs/common';

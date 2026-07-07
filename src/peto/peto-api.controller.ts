@@ -6,6 +6,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
   UploadedFile,
@@ -43,6 +44,14 @@ export class PetoApiController {
   @Post('templates')
   async createTemplate(@Body() body: PetoTemplateDto) {
     return this.petoService.createTemplate(body);
+  }
+
+  @Patch('templates/:id')
+  async updateTemplate(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: PetoTemplateDto,
+  ) {
+    return this.petoService.updateTemplate(id, body);
   }
 
   @Delete('templates/:id')

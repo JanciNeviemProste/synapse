@@ -79,12 +79,29 @@
     <% if (templates.length) { %>
     <ul class="divide-y divide-gray-100 mb-4">
       <% for (const t of templates) { %>
-      <li class="py-2.5 flex items-start justify-between gap-2">
-        <div class="min-w-0">
-          <span class="text-sm font-medium text-gray-900"><%= t.name %></span>
-          <% if (t.description) { %><p class="text-xs text-gray-500"><%= t.description %></p><% } %>
+      <li class="py-2.5" data-tpl="<%= t.id %>">
+        <!-- zobrazenie -->
+        <div class="tpl-view flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <span class="text-sm font-medium text-gray-900"><%= t.name %></span>
+            <% if (t.description) { %><p class="text-xs text-gray-500"><%= t.description %></p><% } %>
+            <% if (t.structure) { %><p class="text-xs text-gray-400 mt-0.5 whitespace-pre-wrap"><%= t.structure %></p><% } %>
+          </div>
+          <div class="flex items-center gap-2 shrink-0 text-xs">
+            <button class="tpl-edit text-indigo-600 hover:underline" data-id="<%= t.id %>">Upraviť</button>
+            <button class="tpl-del text-red-500 hover:text-red-700" data-id="<%= t.id %>">Zmazať</button>
+          </div>
         </div>
-        <button class="tpl-del text-red-500 hover:text-red-700 text-xs shrink-0" data-id="<%= t.id %>">Zmazať</button>
+        <!-- editovanie (skryté) -->
+        <form class="tpl-edit-form hidden space-y-2 mt-1" data-id="<%= t.id %>">
+          <input name="name" required maxlength="200" value="<%= t.name %>" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+          <input name="description" maxlength="2000" value="<%= t.description || '' %>" placeholder="Krátky popis" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+          <textarea name="structure" rows="3" maxlength="4000" placeholder="Ako má skript vyzerať?" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"><%= t.structure || '' %></textarea>
+          <div class="flex items-center gap-2">
+            <button type="submit" class="px-4 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700">Uložiť</button>
+            <button type="button" class="tpl-cancel px-3 py-1.5 text-gray-500 text-xs" data-id="<%= t.id %>">Zrušiť</button>
+          </div>
+        </form>
       </li>
       <% } %>
     </ul>
@@ -212,6 +229,26 @@ document.querySelectorAll('.tpl-del').forEach(b => b.addEventListener('click', a
   if (!confirm('Zmazať šablónu?')) return;
   const res = await fetch('/api/peto/templates/' + b.dataset.id, { method: 'DELETE' });
   if (res.ok) location.reload();
+}));
+const tplRow = (id) => document.querySelector('li[data-tpl="' + id + '"]');
+document.querySelectorAll('.tpl-edit').forEach(b => b.addEventListener('click', () => {
+  const row = tplRow(b.dataset.id);
+  row.querySelector('.tpl-view').classList.add('hidden');
+  row.querySelector('.tpl-edit-form').classList.remove('hidden');
+}));
+document.querySelectorAll('.tpl-cancel').forEach(b => b.addEventListener('click', () => {
+  const row = tplRow(b.dataset.id);
+  row.querySelector('.tpl-edit-form').classList.add('hidden');
+  row.querySelector('.tpl-view').classList.remove('hidden');
+}));
+document.querySelectorAll('.tpl-edit-form').forEach(f => f.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData(f);
+  const res = await fetch('/api/peto/templates/' + f.dataset.id, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: fd.get('name'), description: fd.get('description') || undefined, structure: fd.get('structure') || undefined }),
+  });
+  if (res.ok) location.reload(); else alert('Uloženie zlyhalo');
 }));
 
 // ---- Podklady (docs) ----

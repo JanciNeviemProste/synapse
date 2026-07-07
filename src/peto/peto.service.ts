@@ -182,6 +182,21 @@ export class PetoService {
     });
   }
 
+  async updateTemplate(id: string, input: PetoTemplateInput): Promise<PetoTemplate> {
+    const existing = await this.prisma.petoTemplate.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Šablóna neexistuje.');
+    return this.prisma.petoTemplate.update({
+      where: { id },
+      data: {
+        name: input.name,
+        description: input.description ?? null,
+        structure: input.structure ?? null,
+        hookPattern: input.hookPattern ?? null,
+        ctaPattern: input.ctaPattern ?? null,
+      },
+    });
+  }
+
   async deleteTemplate(id: string): Promise<void> {
     await this.prisma.petoTemplate.delete({ where: { id } });
   }
