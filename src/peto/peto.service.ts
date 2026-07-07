@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { PetoBrand, PetoScript, PetoTemplate, Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { SYSTEM_TEMPLATES } from '../content-studio/data/system-templates';
@@ -141,12 +147,23 @@ export class PetoService {
       throw new BadRequestException(validationError);
     }
     // Audio is transcribed from memory and never stored (privacy + simplicity).
-    const result = await this.providerFactory.getTranscriptionProvider().transcribeAudio({
-      fileBuffer: buffer,
-      mimeType,
-      language: 'sk',
-    });
-    return { text: result.text, durationSeconds: result.durationSeconds };
+    try {
+      const result = await this.providerFactory.getTranscriptionProvider().transcribeAudio({
+        fileBuffer: buffer,
+        mimeType,
+        language: 'sk',
+      });
+      return { text: result.text, durationSeconds: result.durationSeconds };
+    } catch (error) {
+      const msg = (error as Error).message || 'neznáma chyba';
+      this.logger.error(`peto transcription failed: ${msg}`);
+      if (msg.includes('401')) {
+        throw new ServiceUnavailableException(
+          'Prepis zlyhal: prepisovacia služba odmietla API kľúč (401). Skontroluj GROQ_API_KEY.',
+        );
+      }
+      throw new ServiceUnavailableException(`Prepis zlyhal: ${msg}`);
+    }
   }
 
   // ---- Generate scripts ----
