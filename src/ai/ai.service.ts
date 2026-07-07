@@ -93,7 +93,7 @@ export class AiService {
     try {
       const response = await this.client.messages.create({
         model: this.model,
-        max_tokens: 4096,
+        max_tokens: 8192,
         system: systemPrompt,
         messages: [{ role: 'user', content: userMessage }],
       });
@@ -155,7 +155,7 @@ export class AiService {
     try {
       const response = await this.client.messages.create({
         model: this.model,
-        max_tokens: 4096,
+        max_tokens: 8192,
         system: systemPrompt,
         messages: [
           {
@@ -203,7 +203,7 @@ export class AiService {
           },
           body: JSON.stringify({
             model: this.openrouterModel,
-            max_tokens: 4096,
+            max_tokens: 8192,
             messages,
           }),
         },
