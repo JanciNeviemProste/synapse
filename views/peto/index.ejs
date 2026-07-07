@@ -5,11 +5,11 @@
   <p class="text-sm text-gray-500 mt-1">Nahraj hlasovku → prepíše sa → vypadnú hotové skripty. Nič viac.</p>
 </div>
 
-<!-- KROK 1: Môj brand -->
-<details class="bg-white rounded-xl border border-gray-200 mb-4" <%= brand ? '' : 'open' %>>
+<!-- KROK 1: Môj brand (Brand DNA) -->
+<details class="bg-white rounded-xl border border-gray-200 mb-4" open>
   <summary class="cursor-pointer select-none px-6 py-4 flex items-center justify-between">
-    <span class="font-semibold text-gray-900"><span class="text-indigo-600">1.</span> Môj brand <span class="text-xs font-normal text-gray-400">(nastav raz)</span></span>
-    <span class="text-xs px-2 py-0.5 rounded-full <%= brand ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700' %>"><%= brand ? '✓ ' + brand.brandName : 'nevyplnené' %></span>
+    <span class="font-semibold text-gray-900"><span class="text-indigo-600">1.</span> Môj brand <span class="text-xs font-normal text-gray-400">— Brand DNA (nastav raz)</span></span>
+    <span class="text-xs px-2 py-0.5 rounded-full <%= brand ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700' %>"><%= brand ? '✓ uložené' : 'nevyplnené' %></span>
   </summary>
   <div class="px-6 pb-6 border-t border-gray-100 pt-4">
     <form id="brand-form" class="space-y-3">
