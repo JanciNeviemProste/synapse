@@ -159,7 +159,7 @@
     if (title) form.append('title', title);
     try {
       const res = await fetch('/api/content-studio/voice/upload', { method: 'POST', body: form });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status));
       const data = await res.json();
       result.innerHTML = '<p class="text-sm font-medium text-green-700 mb-2">Hotovo — ' + data.ideas.length + ' nápadov.</p>' +
         '<details class="mb-2"><summary class="text-xs text-indigo-600 cursor-pointer">Prepis</summary><p class="text-xs text-gray-600 mt-1 whitespace-pre-wrap">' + (data.session.transcript || '') + '</p></details>' +

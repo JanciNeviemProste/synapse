@@ -70,7 +70,7 @@ document.querySelectorAll('.item-scripts').forEach(b => b.addEventListener('clic
         cta: b.dataset.cta || undefined,
       }),
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status));
     const scripts = await res.json();
     location.href = '/content-studio/scripts/' + scripts[0].id;
   } catch (err) {

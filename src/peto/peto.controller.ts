@@ -25,6 +25,7 @@ export class PetoController {
         docs,
         starters: this.petoService.starterTemplates(),
         batches,
+        mockMode: this.petoService.isMockMode(),
       });
     } catch (error) {
       this.logger.error('Failed to render Peťové Studio', (error as Error).message);

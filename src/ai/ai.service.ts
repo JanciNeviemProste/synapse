@@ -46,6 +46,29 @@ export class AiService {
     const providerSetting =
       this.configService.get<string>('anthropic.provider') || 'auto';
 
+    const known = ['auto', 'openrouter', 'anthropic', 'anthropic-api', 'claude-cli'];
+    if (!known.includes(providerSetting)) {
+      this.logger.warn(
+        `AI_PROVIDER="${providerSetting}" is not recognised (expected auto|openrouter|anthropic|claude-cli) — treating as "auto".`,
+      );
+    }
+
+    // Warn loudly when an explicitly requested provider cannot be satisfied,
+    // so a missing key never silently switches the model behind the scenes.
+    if (providerSetting === 'openrouter' && !this.openrouterKey) {
+      this.logger.warn(
+        'AI_PROVIDER=openrouter requested but OPENROUTER_API_KEY is missing — falling back.',
+      );
+    }
+    if (
+      (providerSetting === 'anthropic' || providerSetting === 'anthropic-api') &&
+      !apiKey
+    ) {
+      this.logger.warn(
+        'AI_PROVIDER=anthropic requested but ANTHROPIC_API_KEY is missing — falling back.',
+      );
+    }
+
     if (providerSetting === 'openrouter' && this.openrouterKey) {
       this.provider = 'openrouter';
       this.logger.log(
@@ -54,6 +77,13 @@ export class AiService {
     } else if (providerSetting === 'claude-cli') {
       this.provider = 'claude-cli';
       this.logger.log('AI service using Claude Code CLI');
+    } else if (
+      (providerSetting === 'anthropic' || providerSetting === 'anthropic-api') &&
+      apiKey
+    ) {
+      this.provider = 'anthropic-api';
+      this.client = new Anthropic({ apiKey });
+      this.logger.log(`AI service using Anthropic API (model: ${this.model})`);
     } else if (apiKey) {
       this.provider = 'anthropic-api';
       this.client = new Anthropic({ apiKey });

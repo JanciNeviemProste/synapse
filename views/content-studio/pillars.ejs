@@ -65,7 +65,7 @@ document.getElementById('pillar-form').addEventListener('submit', async (e) => {
       priority: parseInt(f.get('priority') || '5', 10), targetFrequency: f.get('targetFrequency') || undefined,
     }),
   });
-  if (res.ok) location.reload(); else alert('Uloženie zlyhalo');
+  if (res.ok) location.reload(); else alert('Uloženie zlyhalo:' + ((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status)));
 });
 
 document.querySelectorAll('.pillar-toggle').forEach(b => b.addEventListener('click', async () => {
@@ -87,7 +87,7 @@ document.getElementById('suggest-btn').addEventListener('click', async () => {
   btn.disabled = true; btn.textContent = 'Generujem...';
   try {
     const res = await fetch('/api/content-studio/pillars/suggest', { method: 'POST' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status));
     const { suggestions } = await res.json();
     document.getElementById('suggestions').innerHTML = suggestions.map((s, i) =>
       '<div class="border border-gray-200 rounded-lg p-2 text-xs">' +

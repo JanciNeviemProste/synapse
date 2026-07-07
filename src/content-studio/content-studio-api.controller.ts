@@ -208,7 +208,8 @@ export class ContentStudioApiController {
 
   @Post('intelligence/upload')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  @UseInterceptors(FileInterceptor('video', { limits: { fileSize: 350 * 1024 * 1024 } }))
+  // Generous hard cap; real limit is config-driven (VIDEO_ANALYSIS_MAX_FILE_SIZE_MB).
+  @UseInterceptors(FileInterceptor('video', { limits: { fileSize: 600 * 1024 * 1024 } }))
   async uploadVideo(
     @UploadedFile() file: Express.Multer.File | undefined,
     @Body() body: { title?: string; sourceUrl?: string },
@@ -352,7 +353,8 @@ export class ContentStudioApiController {
 
   @Post('voice/upload')
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // transcription + AI call
-  @UseInterceptors(FileInterceptor('audio', { limits: { fileSize: 60 * 1024 * 1024 } }))
+  // Generous hard cap; real limit is config-driven (CONTENT_AUDIO_MAX_FILE_SIZE_MB).
+  @UseInterceptors(FileInterceptor('audio', { limits: { fileSize: 100 * 1024 * 1024 } }))
   async uploadVoice(
     @UploadedFile() file: Express.Multer.File | undefined,
     @Body() body: { saveAudio?: string; sessionType?: string; title?: string },

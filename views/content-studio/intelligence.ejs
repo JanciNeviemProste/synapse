@@ -69,7 +69,7 @@ document.getElementById('video-form').addEventListener('submit', async (e) => {
   form.append('title', document.getElementById('video-title').value || file.name);
   try {
     const res = await fetch('/api/content-studio/intelligence/upload', { method: 'POST', body: form });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status));
     location.reload();
   } catch (err) {
     status.className = 'text-sm mt-2 text-red-600';

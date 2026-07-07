@@ -5,6 +5,12 @@
   <p class="text-sm text-gray-500 mt-1">Nahraj hlasovku → prepíše sa → vypadnú hotové skripty. Nič viac.</p>
 </div>
 
+<% if (mockMode) { %>
+<div class="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 mb-6 text-sm text-amber-800">
+  ⚠ <strong>Testovací (mock) režim</strong> — chýba AI kľúč, tak sa generujú len ukážkové skripty (ignorujú tvoju myšlienku). Doplň <code>OPENROUTER_API_KEY</code> do <code>.env</code> a reštartuj server pre reálne generovanie.
+</div>
+<% } %>
+
 <!-- KROK 1: Môj brand (Brand DNA) -->
 <details class="bg-white rounded-xl border border-gray-200 mb-4" open>
   <summary class="cursor-pointer select-none px-6 py-4 flex items-center justify-between">
@@ -212,7 +218,7 @@ $('brand-form').addEventListener('submit', async (e) => {
     }),
   });
   if (res.ok) { $('brand-saved').classList.remove('hidden'); setTimeout(() => location.reload(), 800); }
-  else alert('Uloženie zlyhalo');
+  else alert('Uloženie zlyhalo:' + ((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status)));
 });
 
 // ---- Templates ----
@@ -223,12 +229,13 @@ $('tpl-form').addEventListener('submit', async (e) => {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: f.get('name'), description: f.get('description') || undefined, structure: f.get('structure') || undefined }),
   });
-  if (res.ok) location.reload(); else alert('Uloženie zlyhalo');
+  if (res.ok) location.reload(); else alert('Uloženie zlyhalo:' + ((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status)));
 });
 document.querySelectorAll('.tpl-del').forEach(b => b.addEventListener('click', async () => {
   if (!confirm('Zmazať šablónu?')) return;
   const res = await fetch('/api/peto/templates/' + b.dataset.id, { method: 'DELETE' });
   if (res.ok) location.reload();
+  else alert('Mazanie zlyhalo: ' + ((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status)));
 }));
 const tplRow = (id) => document.querySelector('li[data-tpl="' + id + '"]');
 document.querySelectorAll('.tpl-edit').forEach(b => b.addEventListener('click', () => {
@@ -248,7 +255,7 @@ document.querySelectorAll('.tpl-edit-form').forEach(f => f.addEventListener('sub
     method: 'PATCH', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: fd.get('name'), description: fd.get('description') || undefined, structure: fd.get('structure') || undefined }),
   });
-  if (res.ok) location.reload(); else alert('Uloženie zlyhalo');
+  if (res.ok) location.reload(); else alert('Uloženie zlyhalo:' + ((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status)));
 }));
 
 // ---- Podklady (docs) ----
@@ -274,6 +281,7 @@ document.querySelectorAll('.doc-del').forEach(b => b.addEventListener('click', a
   if (!confirm('Zmazať podklad?')) return;
   const res = await fetch('/api/peto/docs/' + b.dataset.id, { method: 'DELETE' });
   if (res.ok) location.reload();
+  else alert('Mazanie zlyhalo: ' + ((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status)));
 }));
 
 // ---- Recorder ----
@@ -359,7 +367,7 @@ function renderVariants(variants) {
 }
 function block(title, text, big) {
   if (!text) return '';
-  const esc = String(text).replace(/</g, '&lt;');
+  const esc = String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   return '<div class="mb-3">' +
     '<div class="flex items-center justify-between"><span class="text-[10px] font-semibold text-gray-400 uppercase">' + title + '</span>' +
     '<button class="copy-b text-indigo-600 text-xs hover:underline" data-text="' + String(text).replace(/"/g,'&quot;') + '">Kopírovať</button></div>' +
@@ -397,6 +405,7 @@ document.querySelectorAll('.batch-del').forEach(b => b.addEventListener('click',
   if (!confirm('Zmazať túto sadu skriptov?')) return;
   const res = await fetch('/api/peto/batches/' + b.dataset.id, { method: 'DELETE' });
   if (res.ok) location.reload();
+  else alert('Mazanie zlyhalo: ' + ((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status)));
 }));
 </script>
 

@@ -87,7 +87,9 @@ export class PetoApiController {
 
   @Post('transcribe')
   @Throttle({ default: { limit: 15, ttl: 60000 } })
-  @UseInterceptors(FileInterceptor('audio', { limits: { fileSize: 60 * 1024 * 1024 } }))
+  // Generous hard cap; the real, user-facing size limit is config-driven in
+  // PetoService.transcribe → storage.validate (CONTENT_AUDIO_MAX_FILE_SIZE_MB).
+  @UseInterceptors(FileInterceptor('audio', { limits: { fileSize: 100 * 1024 * 1024 } }))
   async transcribe(@UploadedFile() file: Express.Multer.File | undefined) {
     if (!file) {
       throw new BadRequestException('Chýba audio súbor (pole "audio").');

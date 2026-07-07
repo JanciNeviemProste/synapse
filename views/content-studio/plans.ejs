@@ -77,7 +77,7 @@ document.getElementById('plan-form').addEventListener('submit', async (e) => {
         campaignContext: f.get('campaignContext') || undefined,
       }),
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status));
     const plan = await res.json();
     location.href = '/content-studio/plans/' + plan.id;
   } catch (err) {

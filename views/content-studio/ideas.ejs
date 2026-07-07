@@ -62,7 +62,7 @@ document.getElementById('merge-btn')?.addEventListener('click', async () => {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ids: checks() }),
   });
-  if (res.ok) location.reload(); else alert('Spojenie zlyhalo');
+  if (res.ok) location.reload(); else alert('Spojenie zlyhalo:' + ((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status)));
 });
 
 document.querySelectorAll('.idea-status').forEach(sel => sel.addEventListener('change', async () => {

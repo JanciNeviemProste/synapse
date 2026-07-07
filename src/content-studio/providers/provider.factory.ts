@@ -138,4 +138,15 @@ export class ContentProviderFactory {
       ? this.anthropicProvider
       : this.mockProvider;
   }
+
+  /**
+   * Whether script/text generation would run on the mock provider (no real
+   * AI key). Lets the UI warn the user that output is placeholder data.
+   * Computed without logging to avoid noise on every page render.
+   */
+  isTextGenerationMock(): boolean {
+    const configured =
+      this.configService.get<string>('contentStudio.scriptProvider') || 'auto';
+    return resolveProviderKind(configured, 'script', this.creds()) === 'mock';
+  }
 }

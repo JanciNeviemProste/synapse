@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { mkdir, readFile, stat, unlink, writeFile } from 'fs/promises';
-import { join, resolve } from 'path';
+import { join, resolve, sep } from 'path';
 
 export type StorageCategory = 'audio' | 'video' | 'frames' | 'thumbnails' | 'transcripts';
 
@@ -82,7 +82,9 @@ export class ContentStorageService {
 
   private toAbsolute(storagePath: string): string {
     const abs = resolve(this.rootDir, storagePath);
-    if (!abs.startsWith(this.rootDir)) {
+    // Must be the root itself or strictly inside it — a bare startsWith would
+    // also accept a sibling dir sharing the prefix (…/content-studio-evil).
+    if (abs !== this.rootDir && !abs.startsWith(this.rootDir + sep)) {
       throw new Error('Invalid storage path');
     }
     return abs;

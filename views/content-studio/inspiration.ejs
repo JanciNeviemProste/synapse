@@ -72,7 +72,7 @@ document.getElementById('insp-form').addEventListener('submit', async (e) => {
       userNotes: f.get('userNotes') || undefined,
     }),
   });
-  if (res.ok) location.reload(); else alert('Uloženie zlyhalo');
+  if (res.ok) location.reload(); else alert('Uloženie zlyhalo:' + ((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status)));
 });
 
 document.querySelectorAll('.insp-analyze').forEach(b => b.addEventListener('click', async () => {

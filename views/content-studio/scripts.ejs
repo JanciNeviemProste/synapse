@@ -106,7 +106,7 @@ document.getElementById('gen-form').addEventListener('submit', async (e) => {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status));
     const scripts = await res.json();
     location.href = '/content-studio/scripts/' + scripts[0].id;
   } catch (err) {

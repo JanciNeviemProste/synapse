@@ -125,7 +125,6 @@ export class PetoService {
   }
 
   async upsertBrand(input: PetoBrandInput): Promise<PetoBrand> {
-    const existing = await this.getBrand();
     const data = {
       brandName: input.brandName,
       industry: input.industry ?? null,
@@ -138,9 +137,24 @@ export class PetoService {
       notes: input.notes ?? null,
       isActive: true,
     };
-    return existing
-      ? this.prisma.petoBrand.update({ where: { id: existing.id }, data })
-      : this.prisma.petoBrand.create({ data });
+    // Transaction keeps exactly one active brand row even under concurrent
+    // saves (double-click) and cleans up any pre-existing duplicates.
+    return this.prisma.$transaction(async (tx) => {
+      const rows = await tx.petoBrand.findMany({
+        where: { isActive: true },
+        orderBy: { updatedAt: 'desc' },
+      });
+      if (rows.length === 0) {
+        return tx.petoBrand.create({ data });
+      }
+      if (rows.length > 1) {
+        await tx.petoBrand.updateMany({
+          where: { id: { in: rows.slice(1).map((r) => r.id) } },
+          data: { isActive: false },
+        });
+      }
+      return tx.petoBrand.update({ where: { id: rows[0].id }, data });
+    });
   }
 
   private async brandContext(): Promise<BrandContext | undefined> {
@@ -198,6 +212,8 @@ export class PetoService {
   }
 
   async deleteTemplate(id: string): Promise<void> {
+    const existing = await this.prisma.petoTemplate.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Šablóna neexistuje.');
     await this.prisma.petoTemplate.delete({ where: { id } });
   }
 
@@ -234,7 +250,34 @@ export class PetoService {
   }
 
   async deleteDoc(id: string): Promise<void> {
+    const existing = await this.prisma.petoDoc.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Podklad neexistuje.');
     await this.prisma.petoDoc.delete({ where: { id } });
+  }
+
+  /**
+   * Map a provider/network error to a friendly HTTP failure. Keeps the raw
+   * detail out of a bare 500 and points at the likely cause (bad API key).
+   */
+  private aiFailure(error: unknown, prefix: string): ServiceUnavailableException {
+    const msg = (error as Error).message || 'neznáma chyba';
+    this.logger.error(`${prefix}: ${msg}`);
+    if (msg.includes('401')) {
+      return new ServiceUnavailableException(
+        `${prefix}: AI služba odmietla API kľúč (401). Skontroluj kľúč v .env (OPENROUTER_API_KEY / GROQ_API_KEY) a reštartuj.`,
+      );
+    }
+    if (msg.includes('429')) {
+      return new ServiceUnavailableException(
+        `${prefix}: AI služba je preťažená (429). Skús o chvíľu.`,
+      );
+    }
+    return new ServiceUnavailableException(`${prefix}: ${msg}`);
+  }
+
+  /** True when text generation would run on the mock provider (no AI key). */
+  isMockMode(): boolean {
+    return this.providerFactory.isTextGenerationMock();
   }
 
   // ---- Voice → text ----
@@ -257,14 +300,7 @@ export class PetoService {
       });
       return { text: result.text, durationSeconds: result.durationSeconds };
     } catch (error) {
-      const msg = (error as Error).message || 'neznáma chyba';
-      this.logger.error(`peto transcription failed: ${msg}`);
-      if (msg.includes('401')) {
-        throw new ServiceUnavailableException(
-          'Prepis zlyhal: prepisovacia služba odmietla API kľúč (401). Skontroluj GROQ_API_KEY.',
-        );
-      }
-      throw new ServiceUnavailableException(`Prepis zlyhal: ${msg}`);
+      throw this.aiFailure(error, 'Prepis zlyhal');
     }
   }
 
@@ -297,20 +333,25 @@ export class PetoService {
       );
     }
 
-    const generated = await this.providerFactory.getScriptProvider().generateScripts({
-      topic,
-      rawIdea: transcript,
-      brand,
-      knowledge: knowledge.sources.length ? knowledge : undefined,
-      template: template
-        ? {
-            name: template.name,
-            structure: template.structure ?? { sections: [] },
-            hookPattern: template.hookPattern ?? undefined,
-            ctaPattern: template.ctaPattern ?? undefined,
-          }
-        : undefined,
-    });
+    let generated;
+    try {
+      generated = await this.providerFactory.getScriptProvider().generateScripts({
+        topic,
+        rawIdea: transcript,
+        brand,
+        knowledge: knowledge.sources.length ? knowledge : undefined,
+        template: template
+          ? {
+              name: template.name,
+              structure: template.structure ?? { sections: [] },
+              hookPattern: template.hookPattern ?? undefined,
+              ctaPattern: template.ctaPattern ?? undefined,
+            }
+          : undefined,
+      });
+    } catch (error) {
+      throw this.aiFailure(error, 'Generovanie zlyhalo');
+    }
 
     const batchId = randomUUID();
     await this.prisma.petoScript.createMany({
