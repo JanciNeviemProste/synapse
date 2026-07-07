@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PetoScript } from '@prisma/client';
-import { PetoService } from './peto.service';
+import { PetoService, selectRelevantDocs } from './peto.service';
 
 /**
  * Pure-logic tests. Batch grouping and starter templates don't touch the
@@ -63,5 +63,36 @@ describe('PetoService.starterTemplates', () => {
     const starters = svc.starterTemplates();
     expect(starters.length).toBe(14);
     expect(starters.every((s) => s.name && s.description)).toBe(true);
+  });
+});
+
+describe('selectRelevantDocs — reference documents → KnowledgeContext', () => {
+  const docs = [
+    { title: 'Cenník', content: 'Balík A stojí 200 eur, balík B stojí 350 eur mesačne.' },
+    { title: 'Brand manuál', content: 'Komunikujeme priateľsky, tykáme, vyhýbame sa žargónu.' },
+    { title: 'Staré skripty', content: 'Hook o častej chybe, príbeh zákazníka, výzva sledovať.' },
+  ];
+
+  it('picks documents relevant to the transcript', () => {
+    const ctx = selectRelevantDocs(docs, 'Chcem video o našich balíkoch a cenníku');
+    expect(ctx.sources.length).toBeGreaterThan(0);
+    expect(ctx.sources[0].title).toBe('Cenník');
+  });
+
+  it('caps excerpt length and source count', () => {
+    const big = [
+      { title: 'Veľký', content: 'balík '.repeat(5000) },
+    ];
+    const ctx = selectRelevantDocs(big, 'balík balík balík');
+    expect(ctx.sources[0].excerpt.length).toBeLessThanOrEqual(1200);
+  });
+
+  it('falls back to newest docs when nothing scores (very short transcript)', () => {
+    const ctx = selectRelevantDocs(docs, 'aha');
+    expect(ctx.sources.length).toBeGreaterThan(0);
+  });
+
+  it('returns no sources when there are no docs', () => {
+    expect(selectRelevantDocs([], 'čokoľvek').sources).toEqual([]);
   });
 });

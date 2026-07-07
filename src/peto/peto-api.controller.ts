@@ -51,6 +51,29 @@ export class PetoApiController {
     return { ok: true };
   }
 
+  // ---- Reference documents (PDF / Word / text) ----
+
+  @Get('docs')
+  async listDocs() {
+    return this.petoService.listDocs();
+  }
+
+  @Post('docs')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
+  async addDoc(@UploadedFile() file: Express.Multer.File | undefined) {
+    if (!file) {
+      throw new BadRequestException('Chýba súbor (pole "file").');
+    }
+    return this.petoService.addDoc(file.buffer, file.mimetype, file.originalname || 'súbor');
+  }
+
+  @Delete('docs/:id')
+  async deleteDoc(@Param('id', ParseUUIDPipe) id: string) {
+    await this.petoService.deleteDoc(id);
+    return { ok: true };
+  }
+
   // ---- Voice → text ----
 
   @Post('transcribe')

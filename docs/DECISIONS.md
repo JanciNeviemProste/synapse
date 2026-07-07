@@ -1,5 +1,8 @@
 # DECISIONS.md — ADR log
 
+## 2026-07-07 — Peťo podklady: extrahovaný text, nie binárka
+Peťo nahráva PDF/Word/text do brandu, aby z nich AI čerpala. Rozhodnutie: pri uploade sa vytiahne TEXT (pdf-parse@1.1.1 lazy-loaded — v2 je ťažké pdfjs API a blokuje subpath import; mammoth pre .docx; UTF-8 pre .txt/.md/.csv) a uloží sa len text do `PetoDoc` — **binárka sa neukladá** (Railway efemérny FS, generovanie potrebuje len text, menej storage). Pri generovaní keyword retrieval (reuse `scoreDocument`/`extractKeywords` z Content Studia) vyberie top 4 relevantné časti ako `knowledge`. Skenované PDF bez textovej vrstvy → jasná hláška (OCR mimo rozsah). Zamietnuté: ukladanie originálov na disk (efemérny FS), pgvector (V2), OCR (potvrdené neskôr).
+
 ## 2026-07-07 — Peťové Studio: izolovaný zjednodušený flow + Groq STT
 Klient „Peťo" chce ultra-jednoduchý nástroj (hlasovka → prepis → skripty), bez zložitosti Content Studia. Rozhodnutie: samostatný modul `src/peto/` s vlastnými lean tabuľkami (`PetoBrand`/`PetoTemplate`/`PetoScript`) — **plne izolovaný** od Content Studia (nulový blast radius), ale znovupoužíva AI vrstvu cez `ContentProviderFactory`. Prepis hlasu cez **Groq Whisper** (`whisper-large-v3-turbo`, free tier) — OpenRouter audio nevie, Groq je OpenAI-kompatibilný a zadarmo; factory transcription auto-priorita groq→openai→mock. Zamietnuté: (a) `space`/workspace tag naprieč Content Studio službami (väčší blast radius); (b) zdieľanie dát s Content Studiom (Peťo by prepísal Jančiho brand); (c) OpenAI Whisper ako default (Groq zadarmo). Peťo používa rovnaký admin login (multi-user mimo rozsah).
 

@@ -13,14 +13,16 @@ export class PetoController {
   @Get()
   async index(@Res() res: Response): Promise<void> {
     try {
-      const [brand, templates, batches] = await Promise.all([
+      const [brand, templates, docs, batches] = await Promise.all([
         this.petoService.getBrand(),
         this.petoService.listTemplates(),
+        this.petoService.listDocs(),
         this.petoService.listBatches(10),
       ]);
       res.render(path.join('peto', 'index'), {
         brand,
         templates,
+        docs,
         starters: this.petoService.starterTemplates(),
         batches,
       });

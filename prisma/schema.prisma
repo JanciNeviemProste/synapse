@@ -732,6 +732,17 @@ model PetoTemplate {
   @@index([createdAt])
 }
 
+model PetoDoc {
+  id         String   @id @default(uuid())
+  title      String
+  sourceType String
+  content    String   @db.Text
+  charCount  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 model PetoScript {
   id               String   @id @default(uuid())
   batchId          String

@@ -26,7 +26,8 @@ Moduly: `auth` (login + globálne gardy), `leads`, `coder`, `research`, `trackin
 
 ## Peťové Studio (od 2026-07-07, `src/peto/`)
 - Zjednodušený flow pre klienta „Peťo": nahrá hlasovku → prepis (Groq Whisper) → svoj brand DNA + šablóny → 3 prehľadné Reel skripty. Jedna stránka `/peto`, žiadne piliere/plány/schvaľovanie.
-- **Izolovaný**: vlastné lean tabuľky `PetoBrand`/`PetoTemplate`/`PetoScript` (migrácia `peto_studio`), Content Studio sa ich nedotýka. Znovupoužíva AI vrstvu cez `ContentProviderFactory` (transcription + script provider).
+- **Izolovaný**: vlastné lean tabuľky `PetoBrand`/`PetoTemplate`/`PetoDoc`/`PetoScript` (migrácie `peto_studio`, `peto_docs`), Content Studio sa ich nedotýka. Znovupoužíva AI vrstvu cez `ContentProviderFactory` (transcription + script provider) + retrieval helpery (`scoreDocument`/`extractKeywords`) z knowledge.service.
+- **Podklady (PDF/Word/text):** Peťo nahrá súbory (PDF cez pdf-parse@1.1.1 lazy-loaded, .docx cez mammoth, .txt/.md/.csv) → `PetoDoc` (uloží sa len vytiahnutý TEXT, nie binárka — Railway efemérny FS). Pri generovaní sa relevantné časti (keyword retrieval, top 4) priložia ako `knowledge`. Extrakcia: `src/peto/document-text.ts`.
 - **Prepis hlasu = Groq** (`TRANSCRIPTION_PROVIDER=groq` + `GROQ_API_KEY`, zdarma; `whisper-large-v3-turbo`). OpenRouter audio nevie. Bez kľúča → mock prepis. Groq factory rozlíšenie: auto uprednostní groq → openai → mock (aj Content Studio voice z toho ťaží).
 - Rovnaký admin login ako zvyšok (jeden ADMIN_PASSWORD), samostatné prihlásenie pre Peťa mimo rozsah.
 

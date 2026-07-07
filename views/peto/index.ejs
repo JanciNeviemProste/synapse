@@ -37,6 +37,38 @@
   </div>
 </details>
 
+<!-- Podklady (PDF a súbory) -->
+<details class="bg-white rounded-xl border border-gray-200 mb-4" open>
+  <summary class="cursor-pointer select-none px-6 py-4 flex items-center justify-between">
+    <span class="font-semibold text-gray-900"><span class="text-indigo-600">1b.</span> Podklady <span class="text-xs font-normal text-gray-400">— PDF, Word, text (AI z nich čerpá)</span></span>
+    <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600"><%= docs.length %> súborov</span>
+  </summary>
+  <div class="px-6 pb-6 border-t border-gray-100 pt-4">
+    <p class="text-xs text-gray-400 mb-3">Nahraj cenník, brand manuál, staré skripty, produktové info… Vytiahne sa z nich text a AI ho použije pri generovaní. Podporované: PDF, Word (.docx), .txt, .md, .csv (max 20 MB).</p>
+    <div class="flex items-center gap-2 mb-4">
+      <input type="file" id="doc-file" accept=".pdf,.docx,.txt,.md,.csv,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown,text/csv" class="flex-1 text-sm text-gray-600 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 file:text-sm file:font-medium">
+      <button id="doc-upload" class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 whitespace-nowrap">Nahrať</button>
+    </div>
+    <p id="doc-status" class="hidden text-sm mb-3"></p>
+    <% if (docs.length) { %>
+    <ul class="divide-y divide-gray-100">
+      <% for (const d of docs) { %>
+      <li class="py-2.5 flex items-center justify-between gap-2">
+        <div class="min-w-0 flex items-center gap-2">
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-medium uppercase shrink-0"><%= d.sourceType %></span>
+          <span class="text-sm font-medium text-gray-900 truncate"><%= d.title %></span>
+          <span class="text-xs text-gray-400 shrink-0"><%= d.charCount.toLocaleString('sk-SK') %> znakov</span>
+        </div>
+        <button class="doc-del text-red-500 hover:text-red-700 text-xs shrink-0" data-id="<%= d.id %>">Zmazať</button>
+      </li>
+      <% } %>
+    </ul>
+    <% } else { %>
+    <p class="text-sm text-gray-400">Zatiaľ žiadne podklady.</p>
+    <% } %>
+  </div>
+</details>
+
 <!-- KROK 2: Moje šablóny -->
 <details class="bg-white rounded-xl border border-gray-200 mb-4">
   <summary class="cursor-pointer select-none px-6 py-4 flex items-center justify-between">
@@ -179,6 +211,31 @@ $('tpl-form').addEventListener('submit', async (e) => {
 document.querySelectorAll('.tpl-del').forEach(b => b.addEventListener('click', async () => {
   if (!confirm('Zmazať šablónu?')) return;
   const res = await fetch('/api/peto/templates/' + b.dataset.id, { method: 'DELETE' });
+  if (res.ok) location.reload();
+}));
+
+// ---- Podklady (docs) ----
+$('doc-upload').addEventListener('click', async () => {
+  const file = $('doc-file').files[0];
+  const status = $('doc-status');
+  if (!file) { alert('Vyber súbor.'); return; }
+  status.classList.remove('hidden');
+  status.className = 'text-sm mb-3 text-gray-600';
+  status.textContent = 'Spracúvam „' + file.name + '"…';
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const res = await fetch('/api/peto/docs', { method: 'POST', body: form });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status));
+    location.reload();
+  } catch (err) {
+    status.className = 'text-sm mb-3 text-red-600';
+    status.textContent = 'Nahranie zlyhalo: ' + err.message;
+  }
+});
+document.querySelectorAll('.doc-del').forEach(b => b.addEventListener('click', async () => {
+  if (!confirm('Zmazať podklad?')) return;
+  const res = await fetch('/api/peto/docs/' + b.dataset.id, { method: 'DELETE' });
   if (res.ok) location.reload();
 }));
 

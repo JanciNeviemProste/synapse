@@ -5,11 +5,23 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { PetoBrand, PetoScript, PetoTemplate, Prisma } from '@prisma/client';
+import { PetoBrand, PetoDoc, PetoScript, PetoTemplate, Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { SYSTEM_TEMPLATES } from '../content-studio/data/system-templates';
-import { BrandContext } from '../content-studio/providers/provider.interfaces';
+import {
+  extractKeywords,
+  scoreDocument,
+} from '../content-studio/services/knowledge.service';
+import {
+  BrandContext,
+  KnowledgeContext,
+} from '../content-studio/providers/provider.interfaces';
 import { ContentProviderFactory } from '../content-studio/providers/provider.factory';
+import {
+  EmptyDocumentError,
+  extractText,
+  UnsupportedFileError,
+} from './document-text';
 import { ContentStorageService } from '../content-studio/storage/content-storage.service';
 import { GeneratedScriptVariant } from '../content-studio/schemas/ai-output.schemas';
 import { PrismaService } from '../database/prisma.service';
@@ -46,6 +58,45 @@ function toStringArray(value: Prisma.JsonValue | null | undefined): string[] {
   return Array.isArray(value)
     ? value.filter((v): v is string => typeof v === 'string')
     : [];
+}
+
+const DOC_EXCERPT_LENGTH = 1200;
+const MAX_DOC_SOURCES = 4;
+
+/**
+ * Pick the reference documents most relevant to the transcript and turn them
+ * into a KnowledgeContext for the script prompt. Reuses Content Studio's pure
+ * keyword-retrieval helpers. Pure — unit tested.
+ */
+export function selectRelevantDocs(
+  docs: Pick<PetoDoc, 'title' | 'content'>[],
+  transcript: string,
+): KnowledgeContext {
+  const keywords = extractKeywords(transcript);
+  const scored = docs
+    .map((doc) => ({
+      doc,
+      score: scoreDocument(
+        { title: doc.title, content: doc.content, tags: [] },
+        keywords,
+      ),
+    }))
+    .filter((d) => d.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, MAX_DOC_SOURCES);
+
+  // If nothing scored (very short transcript), fall back to the newest docs so
+  // uploaded material still informs generation.
+  const chosen = scored.length
+    ? scored.map((s) => s.doc)
+    : docs.slice(0, MAX_DOC_SOURCES);
+
+  return {
+    sources: chosen.map((doc) => ({
+      title: doc.title,
+      excerpt: doc.content.substring(0, DOC_EXCERPT_LENGTH),
+    })),
+  };
 }
 
 /**
@@ -135,6 +186,42 @@ export class PetoService {
     await this.prisma.petoTemplate.delete({ where: { id } });
   }
 
+  // ---- Reference documents (PDF / Word / text) ----
+
+  async listDocs(): Promise<PetoDoc[]> {
+    return this.prisma.petoDoc.findMany({ orderBy: { createdAt: 'desc' } });
+  }
+
+  /** Extract text from an uploaded file and store it (text only, no binary). */
+  async addDoc(buffer: Buffer, mimeType: string, fileName: string): Promise<PetoDoc> {
+    let extracted;
+    try {
+      extracted = await extractText(buffer, mimeType, fileName);
+    } catch (error) {
+      if (
+        error instanceof UnsupportedFileError ||
+        error instanceof EmptyDocumentError
+      ) {
+        throw new BadRequestException(error.message);
+      }
+      this.logger.error(`peto doc extraction failed: ${(error as Error).message}`);
+      throw new BadRequestException('Súbor sa nepodarilo spracovať.');
+    }
+    const { text, sourceType } = extracted;
+    return this.prisma.petoDoc.create({
+      data: {
+        title: fileName.slice(0, 200),
+        sourceType,
+        content: text,
+        charCount: text.length,
+      },
+    });
+  }
+
+  async deleteDoc(id: string): Promise<void> {
+    await this.prisma.petoDoc.delete({ where: { id } });
+  }
+
   // ---- Voice → text ----
 
   async transcribe(
@@ -187,10 +274,19 @@ export class PetoService {
 
     const topic = transcript.replace(/\s+/g, ' ').slice(0, 80);
 
+    const docs = await this.prisma.petoDoc.findMany();
+    const knowledge = selectRelevantDocs(docs, transcript);
+    if (knowledge.sources.length) {
+      this.logger.log(
+        `peto: using ${knowledge.sources.length} reference doc(s) for generation`,
+      );
+    }
+
     const generated = await this.providerFactory.getScriptProvider().generateScripts({
       topic,
       rawIdea: transcript,
       brand,
+      knowledge: knowledge.sources.length ? knowledge : undefined,
       template: template
         ? {
             name: template.name,
