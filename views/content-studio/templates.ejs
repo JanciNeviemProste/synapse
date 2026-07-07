@@ -7,6 +7,10 @@
 
 <%- include('_subnav', { subnavPath: '/content-studio/templates' }) %>
 
+<div class="bg-indigo-50/50 border border-indigo-100 rounded-lg px-4 py-3 mb-6 text-sm text-gray-600">
+  <strong class="text-gray-800">Načo to je:</strong> osvedčené štruktúry skriptu (hook → telo → výzva). <span class="text-gray-500">Keď generuješ skript so šablónou, AI dodrží jej formát — konzistentnejší a čitateľnejší výsledok.</span>
+</div>
+
 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
   <% for (const t of templates) { %>
   <div class="bg-white rounded-xl border <%= t.isArchived ? 'border-gray-100 opacity-60' : 'border-gray-200' %> p-5 flex flex-col">
