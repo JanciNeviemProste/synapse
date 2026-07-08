@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  BrandExtraction,
   ComplianceResult,
   ContentPillarsOutput,
   DocumentClassification,
@@ -13,6 +14,7 @@ import {
 } from '../schemas/ai-output.schemas';
 import {
   BrandContext,
+  BrandExtractionProvider,
   ComplianceInput,
   ComplianceProvider,
   ContentPillarInput,
@@ -48,7 +50,8 @@ export class MockContentProvider
     ComplianceProvider,
     TranscriptionProvider,
     RealtimeVoiceProvider,
-    DocumentClassificationProvider
+    DocumentClassificationProvider,
+    BrandExtractionProvider
 {
   async extractIdeas(input: ContentStrategyInput): Promise<ExtractedIdeas> {
     const topic = input.rawText.slice(0, 60) || 'tvoja téma';
@@ -200,6 +203,18 @@ export class MockContentProvider
     _textExcerpt: string,
   ): Promise<DocumentClassification> {
     return { category: 'iné (mock)' };
+  }
+
+  async extractBrandFields(_textExcerpt: string): Promise<BrandExtraction> {
+    return {
+      brandName: '[MOCK] Značka',
+      industry: '',
+      targetAudience: '',
+      communicationStyle: '',
+      preferredPhrases: [],
+      forbiddenPhrases: [],
+      requiredCtas: [],
+    };
   }
 
   async analyzeStyle(_input: StyleMemoryInput): Promise<StyleMemoryAnalysis> {

@@ -6,6 +6,7 @@ import {
   parseAiJson,
 } from '../schemas/ai-json';
 import {
+  BrandExtraction,
   ComplianceResult,
   ContentPillarsOutput,
   DocumentClassification,
@@ -18,6 +19,7 @@ import {
   ProofreadFields,
   ScriptReview,
   StyleMemoryAnalysis,
+  brandExtractionSchema,
   complianceResultSchema,
   contentPillarsSchema,
   documentClassificationSchema,
@@ -32,6 +34,7 @@ import {
   styleMemoryAnalysisSchema,
 } from '../schemas/ai-output.schemas';
 import {
+  BrandExtractionProvider,
   ComplianceInput,
   ComplianceProvider,
   ContentPillarInput,
@@ -50,6 +53,7 @@ import {
   InterviewTurn,
 } from './provider.interfaces';
 import { buildDocumentClassificationPrompt } from '../prompts/document-classification.prompt';
+import { buildBrandExtractionPrompt } from '../prompts/brand-extraction.prompt';
 import { buildIdeaExtractionPrompt } from '../prompts/voice-idea-extraction.prompt';
 import { buildContentPillarsPrompt } from '../prompts/content-pillars.prompt';
 import { buildContentPlanPrompt } from '../prompts/content-plan-generation.prompt';
@@ -121,7 +125,8 @@ export class AnthropicContentProvider
     ComplianceProvider,
     VideoUnderstandingProvider,
     ContentDnaProvider,
-    DocumentClassificationProvider
+    DocumentClassificationProvider,
+    BrandExtractionProvider
 {
   private readonly logger = new Logger(AnthropicContentProvider.name);
 
@@ -233,6 +238,11 @@ export class AnthropicContentProvider
       user,
       'classify-document',
     );
+  }
+
+  extractBrandFields(textExcerpt: string): Promise<BrandExtraction> {
+    const { system, user } = buildBrandExtractionPrompt(textExcerpt);
+    return this.generateValidated(brandExtractionSchema, system, user, 'extract-brand');
   }
 
   async generateScripts(input: ScriptGenerationInput): Promise<GeneratedScripts> {

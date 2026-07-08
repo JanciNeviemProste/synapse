@@ -236,6 +236,19 @@ export const documentClassificationSchema = z.object({
 });
 export type DocumentClassification = z.infer<typeof documentClassificationSchema>;
 
+// ---- Brand DNA extraction from an uploaded document (Peto drag&drop) ----
+
+export const brandExtractionSchema = z.object({
+  brandName: z.string().default(''),
+  industry: z.string().default(''),
+  targetAudience: z.string().default(''),
+  communicationStyle: z.string().default(''),
+  preferredPhrases: z.array(z.string()).default([]),
+  forbiddenPhrases: z.array(z.string()).default([]),
+  requiredCtas: z.array(z.string()).default([]),
+});
+export type BrandExtraction = z.infer<typeof brandExtractionSchema>;
+
 // ---- §23 Style memory analysis ----
 
 export const styleMemoryAnalysisSchema = z.object({

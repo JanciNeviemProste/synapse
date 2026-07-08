@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  brandExtractionSchema,
   complianceResultSchema,
   contentPillarsSchema,
   documentClassificationSchema,
@@ -112,6 +113,11 @@ describe('MockContentProvider produces schema-valid outputs', () => {
     const out = await provider.classifyDocument('cennik.pdf', 'Balík A stojí 200 eur.');
     expect(() => documentClassificationSchema.parse(out)).not.toThrow();
     expect(out.category.length).toBeGreaterThan(0);
+  });
+
+  it('extractBrandFields', async () => {
+    const out = await provider.extractBrandFields('Sme malá kaviareň v Bratislave.');
+    expect(() => brandExtractionSchema.parse(out)).not.toThrow();
   });
 
   it('transcribeAudio returns timestamped segments', async () => {

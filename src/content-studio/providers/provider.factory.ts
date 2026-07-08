@@ -6,6 +6,7 @@ import { GroqTranscriptionProvider } from './groq-transcription.provider';
 import { OpenAiRealtimeProvider } from './openai-realtime.provider';
 import { OpenAiTranscriptionProvider } from './openai-transcription.provider';
 import {
+  BrandExtractionProvider,
   ComplianceProvider,
   ContentDnaProvider,
   ContentStrategyProvider,
@@ -142,6 +143,13 @@ export class ContentProviderFactory {
 
   /** Reuses the "strategy" role's provider selection — same lightweight text-classification tier. */
   getDocumentClassificationProvider(): DocumentClassificationProvider {
+    return this.kindFor('strategy', 'contentStudio.strategyProvider') === 'anthropic'
+      ? this.anthropicProvider
+      : this.mockProvider;
+  }
+
+  /** Reuses the "strategy" role's provider selection — same lightweight text-classification tier. */
+  getBrandExtractionProvider(): BrandExtractionProvider {
     return this.kindFor('strategy', 'contentStudio.strategyProvider') === 'anthropic'
       ? this.anthropicProvider
       : this.mockProvider;

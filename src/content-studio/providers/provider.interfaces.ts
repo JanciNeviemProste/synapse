@@ -1,4 +1,5 @@
 import {
+  BrandExtraction,
   ComplianceResult,
   ContentPillarsOutput,
   DocumentClassification,
@@ -154,6 +155,10 @@ export interface ComplianceProvider {
 
 export interface DocumentClassificationProvider {
   classifyDocument(fileName: string, textExcerpt: string): Promise<DocumentClassification>;
+}
+
+export interface BrandExtractionProvider {
+  extractBrandFields(textExcerpt: string): Promise<BrandExtraction>;
 }
 
 // ---- Voice (spec §8) ----

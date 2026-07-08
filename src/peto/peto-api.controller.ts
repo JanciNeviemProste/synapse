@@ -83,6 +83,38 @@ export class PetoApiController {
     return { ok: true };
   }
 
+  /** Extract text from a dropped file without saving it — used to pre-fill
+   * a manual field (template structure, transcript) elsewhere on the page. */
+  @Post('extract-text')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
+  async extractTextOnly(@UploadedFile() file: Express.Multer.File | undefined) {
+    if (!file) {
+      throw new BadRequestException('Chýba súbor (pole "file").');
+    }
+    return this.petoService.extractTextOnly(
+      file.buffer,
+      file.mimetype,
+      file.originalname || 'súbor',
+    );
+  }
+
+  /** Drop a document → AI best-guesses Brand DNA fields for the user to
+   * review before saving via PUT /brand. Never persists on its own. */
+  @Post('brand/extract')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
+  async extractBrand(@UploadedFile() file: Express.Multer.File | undefined) {
+    if (!file) {
+      throw new BadRequestException('Chýba súbor (pole "file").');
+    }
+    return this.petoService.extractBrandFromDoc(
+      file.buffer,
+      file.mimetype,
+      file.originalname || 'súbor',
+    );
+  }
+
   // ---- Voice → text ----
 
   @Post('transcribe')

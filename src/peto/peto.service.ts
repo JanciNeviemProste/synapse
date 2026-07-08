@@ -230,20 +230,7 @@ export class PetoService {
 
   /** Extract text from an uploaded file and store it (text only, no binary). */
   async addDoc(buffer: Buffer, mimeType: string, fileName: string): Promise<PetoDoc> {
-    let extracted;
-    try {
-      extracted = await extractText(buffer, mimeType, fileName);
-    } catch (error) {
-      if (
-        error instanceof UnsupportedFileError ||
-        error instanceof EmptyDocumentError
-      ) {
-        throw new BadRequestException(error.message);
-      }
-      this.logger.error(`peto doc extraction failed: ${(error as Error).message}`);
-      throw new BadRequestException('Súbor sa nepodarilo spracovať.');
-    }
-    const { text, sourceType } = extracted;
+    const { text, sourceType } = await this.extractTextOrThrow(buffer, mimeType, fileName);
     const category = await this.classifyDocBestEffort(fileName, text);
     return this.prisma.petoDoc.create({
       data: {
@@ -254,6 +241,54 @@ export class PetoService {
         charCount: text.length,
       },
     });
+  }
+
+  /** Extract text from a file without persisting anything — used to feed
+   * other sections' manual fields (templates, transcript) from a dropped
+   * document. */
+  async extractTextOnly(
+    buffer: Buffer,
+    mimeType: string,
+    fileName: string,
+  ): Promise<{ text: string; sourceType: string }> {
+    return this.extractTextOrThrow(buffer, mimeType, fileName);
+  }
+
+  /** AI-guessed Brand DNA fields from a dropped document — returned for the
+   * user to review/edit, never persisted directly. */
+  async extractBrandFromDoc(
+    buffer: Buffer,
+    mimeType: string,
+    fileName: string,
+  ): Promise<{ brandName: string; industry: string; targetAudience: string; communicationStyle: string; preferredPhrases: string[]; forbiddenPhrases: string[]; requiredCtas: string[] }> {
+    const { text } = await this.extractTextOrThrow(buffer, mimeType, fileName);
+    try {
+      return await this.providerFactory
+        .getBrandExtractionProvider()
+        .extractBrandFields(text.slice(0, 3000));
+    } catch (error) {
+      this.logger.error(`brand extraction failed: ${(error as Error).message}`);
+      throw new BadRequestException('Z dokumentu sa nepodarilo odhadnúť brand polia.');
+    }
+  }
+
+  private async extractTextOrThrow(
+    buffer: Buffer,
+    mimeType: string,
+    fileName: string,
+  ): Promise<{ text: string; sourceType: string }> {
+    try {
+      return await extractText(buffer, mimeType, fileName);
+    } catch (error) {
+      if (
+        error instanceof UnsupportedFileError ||
+        error instanceof EmptyDocumentError
+      ) {
+        throw new BadRequestException(error.message);
+      }
+      this.logger.error(`peto doc extraction failed: ${(error as Error).message}`);
+      throw new BadRequestException('Súbor sa nepodarilo spracovať.');
+    }
   }
 
   /** AI-guessed document category — best-effort, never blocks the upload. */

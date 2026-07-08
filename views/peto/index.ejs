@@ -22,6 +22,11 @@
     <span class="text-xs px-2 py-0.5 rounded-full <%= brand ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700' %>"><%= brand ? '✓ uložené' : 'nevyplnené' %></span>
   </summary>
   <div class="px-6 pb-6 border-t border-gray-100 pt-4">
+    <div id="brand-dropzone" class="mb-3 border-2 border-dashed border-gray-300 rounded-lg px-4 py-4 text-center cursor-pointer transition-colors hover:border-indigo-400 hover:bg-indigo-50/40">
+      <input type="file" id="brand-file" accept=".pdf,.docx,.xlsx,.txt,.md,.csv,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,text/markdown,text/csv" class="hidden">
+      <p class="text-xs text-gray-500">📎 Pretiahni sem brand manuál/popis firmy a AI skúsi predvyplniť polia nižšie, alebo vyplň manuálne pod tým.</p>
+    </div>
+    <p id="brand-extract-status" class="hidden text-xs mb-3"></p>
     <form id="brand-form" class="space-y-3">
       <% const arr = (v) => Array.isArray(v) ? v.join('\n') : ''; %>
       <input name="brandName" required maxlength="200" placeholder="Názov značky / meno *" value="<%= brand ? brand.brandName : '' %>" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
@@ -119,6 +124,10 @@
     <form id="tpl-form" class="space-y-2 border-t border-gray-100 pt-4">
       <input name="name" required maxlength="200" placeholder="Názov šablóny *" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
       <input name="description" maxlength="2000" placeholder="Krátky popis" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+      <div id="tpl-dropzone" class="border-2 border-dashed border-gray-300 rounded-lg px-3 py-3 text-center cursor-pointer transition-colors hover:border-indigo-400 hover:bg-indigo-50/40">
+        <input type="file" id="tpl-file" accept=".pdf,.docx,.xlsx,.txt,.md,.csv,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,text/markdown,text/csv" class="hidden">
+        <p class="text-xs text-gray-500">📎 Pretiahni sem príklad skriptu/šablóny a text sa vloží nižšie, alebo napíš rovno tam.</p>
+      </div>
       <textarea name="structure" rows="3" maxlength="4000" placeholder="Ako má skript vyzerať? (napr.: začni otázkou, potom príbeh, na konci výzva sledovať)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></textarea>
       <button class="px-4 py-2 bg-white border border-indigo-300 text-indigo-700 text-sm font-semibold rounded-lg hover:bg-indigo-50">Pridať šablónu</button>
     </form>
@@ -149,11 +158,10 @@
       </div>
       <audio id="rec-playback" controls class="hidden w-full"></audio>
     </div>
-    <!-- Upload -->
-    <div class="flex flex-col justify-center gap-2 border border-gray-100 rounded-lg p-4">
-      <label class="text-xs text-gray-500">alebo nahraj audio súbor</label>
-      <input type="file" id="audio-file" accept="audio/*" class="w-full text-sm text-gray-600 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 file:text-sm file:font-medium">
-      <button id="upload-btn" class="px-4 py-2 bg-white border border-indigo-300 text-indigo-700 text-sm font-semibold rounded-lg hover:bg-indigo-50">Prepísať súbor</button>
+    <!-- Upload: audio (prepis) alebo text/dokument (rovno do prepisu) -->
+    <div id="transcript-dropzone" class="flex flex-col justify-center gap-2 border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer transition-colors hover:border-indigo-400 hover:bg-indigo-50/40">
+      <input type="file" id="audio-file" accept="audio/*,.pdf,.docx,.xlsx,.txt,.md,.csv" class="hidden">
+      <p class="text-xs text-gray-500 text-center">📎 Pretiahni sem audio súbor (prepíše sa) alebo dokument/text (vloží sa rovno), alebo <span class="text-indigo-600 font-medium">klikni a vyber</span></p>
     </div>
   </div>
 
@@ -225,6 +233,55 @@ $('brand-form').addEventListener('submit', async (e) => {
   else alert('Uloženie zlyhalo:' + ((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status)));
 });
 
+const brandDropzone = $('brand-dropzone');
+brandDropzone.addEventListener('click', () => $('brand-file').click());
+$('brand-file').addEventListener('change', () => {
+  const file = $('brand-file').files[0];
+  if (file) extractBrandFromFile(file);
+});
+['dragenter', 'dragover'].forEach(evt => brandDropzone.addEventListener(evt, (e) => {
+  e.preventDefault();
+  brandDropzone.classList.add('border-indigo-400', 'bg-indigo-50/40');
+}));
+['dragleave', 'drop'].forEach(evt => brandDropzone.addEventListener(evt, (e) => {
+  e.preventDefault();
+  brandDropzone.classList.remove('border-indigo-400', 'bg-indigo-50/40');
+}));
+brandDropzone.addEventListener('drop', (e) => {
+  const file = e.dataTransfer?.files?.[0];
+  if (file) extractBrandFromFile(file);
+});
+
+async function extractBrandFromFile(file) {
+  const status = $('brand-extract-status');
+  status.classList.remove('hidden');
+  status.className = 'text-xs mb-3 text-gray-600';
+  status.textContent = 'AI odhaduje brand polia z „' + file.name + '"…';
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const res = await fetch('/api/peto/brand/extract', { method: 'POST', body: form });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status));
+    const guess = await res.json();
+    const fill = (name, value) => {
+      const el = document.querySelector('#brand-form [name="' + name + '"]');
+      if (el && !el.value && value) el.value = value;
+    };
+    fill('brandName', guess.brandName);
+    fill('industry', guess.industry);
+    fill('targetAudience', guess.targetAudience);
+    fill('communicationStyle', guess.communicationStyle);
+    fill('preferredPhrases', (guess.preferredPhrases || []).join('\n'));
+    fill('forbiddenPhrases', (guess.forbiddenPhrases || []).join('\n'));
+    fill('requiredCtas', (guess.requiredCtas || []).join('\n'));
+    status.className = 'text-xs mb-3 text-emerald-700';
+    status.textContent = 'AI predvyplnenie hotové — skontroluj polia nižšie a ulož.';
+  } catch (err) {
+    status.className = 'text-xs mb-3 text-red-600';
+    status.textContent = 'Nepodarilo sa: ' + err.message;
+  }
+}
+
 // ---- Templates ----
 $('tpl-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -234,6 +291,24 @@ $('tpl-form').addEventListener('submit', async (e) => {
     body: JSON.stringify({ name: f.get('name'), description: f.get('description') || undefined, structure: f.get('structure') || undefined }),
   });
   if (res.ok) location.reload(); else alert('Uloženie zlyhalo:' + ((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status)));
+});
+const tplDropzone = $('tpl-dropzone');
+tplDropzone.addEventListener('click', () => $('tpl-file').click());
+$('tpl-file').addEventListener('change', () => {
+  const file = $('tpl-file').files[0];
+  if (file) extractIntoField(file, document.querySelector('#tpl-form [name="structure"]'));
+});
+['dragenter', 'dragover'].forEach(evt => tplDropzone.addEventListener(evt, (e) => {
+  e.preventDefault();
+  tplDropzone.classList.add('border-indigo-400', 'bg-indigo-50/40');
+}));
+['dragleave', 'drop'].forEach(evt => tplDropzone.addEventListener(evt, (e) => {
+  e.preventDefault();
+  tplDropzone.classList.remove('border-indigo-400', 'bg-indigo-50/40');
+}));
+tplDropzone.addEventListener('drop', (e) => {
+  const file = e.dataTransfer?.files?.[0];
+  if (file) extractIntoField(file, document.querySelector('#tpl-form [name="structure"]'));
 });
 document.querySelectorAll('.tpl-del').forEach(b => b.addEventListener('click', async () => {
   if (!confirm('Zmazať šablónu?')) return;
@@ -356,11 +431,45 @@ document.querySelectorAll('.doc-del').forEach(b => b.addEventListener('click', a
   });
 })();
 
-$('upload-btn').addEventListener('click', () => {
+function handleTranscriptFile(file) {
+  if (file.type.startsWith('audio/')) {
+    sendAudio(file, file.name);
+  } else {
+    extractIntoField(file, $('transcript'));
+  }
+}
+const transcriptDropzone = $('transcript-dropzone');
+transcriptDropzone.addEventListener('click', () => $('audio-file').click());
+$('audio-file').addEventListener('change', () => {
   const file = $('audio-file').files[0];
-  if (!file) { alert('Vyber audio súbor.'); return; }
-  sendAudio(file, file.name);
+  if (file) handleTranscriptFile(file);
 });
+['dragenter', 'dragover'].forEach(evt => transcriptDropzone.addEventListener(evt, (e) => {
+  e.preventDefault();
+  transcriptDropzone.classList.add('border-indigo-400', 'bg-indigo-50/40');
+}));
+['dragleave', 'drop'].forEach(evt => transcriptDropzone.addEventListener(evt, (e) => {
+  e.preventDefault();
+  transcriptDropzone.classList.remove('border-indigo-400', 'bg-indigo-50/40');
+}));
+transcriptDropzone.addEventListener('drop', (e) => {
+  const file = e.dataTransfer?.files?.[0];
+  if (file) handleTranscriptFile(file);
+});
+
+/** Extract text from a dropped file (no persistence) and put it into a target field. */
+async function extractIntoField(file, targetEl) {
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const res = await fetch('/api/peto/extract-text', { method: 'POST', body: form });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status));
+    const data = await res.json();
+    targetEl.value = targetEl.value ? targetEl.value + '\n\n' + data.text : data.text;
+  } catch (err) {
+    alert('Nepodarilo sa vytiahnuť text: ' + err.message);
+  }
+}
 
 async function sendAudio(blobOrFile, name) {
   const status = $('transcribe-status');
