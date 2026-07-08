@@ -33,14 +33,17 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
   async startBot() {
     if (!this.bot) return;
-    try {
-      this.bot.start({
+    this.bot
+      .start({
         drop_pending_updates: true,
         onStart: () => this.logger.log('Telegram bot polling started'),
+      })
+      .catch((error) => {
+        this.logger.error(
+          'Telegram bot failed to start — bot disabled, app continues running',
+          (error as Error).message,
+        );
       });
-    } catch (error) {
-      this.logger.error('Failed to start bot', (error as Error).message);
-    }
   }
 
   async sendMessage(chatId: string | number, text: string, options?: Record<string, unknown>) {
