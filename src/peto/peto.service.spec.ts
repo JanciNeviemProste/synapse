@@ -85,7 +85,7 @@ describe('selectRelevantDocs — reference documents → KnowledgeContext', () =
       { title: 'Veľký', content: 'balík '.repeat(5000) },
     ];
     const ctx = selectRelevantDocs(big, 'balík balík balík');
-    expect(ctx.sources[0].excerpt.length).toBeLessThanOrEqual(1200);
+    expect(ctx.sources[0].excerpt.length).toBeLessThanOrEqual(3000);
   });
 
   it('falls back to newest docs when nothing scores (very short transcript)', () => {

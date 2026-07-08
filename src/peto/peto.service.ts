@@ -61,8 +61,12 @@ function toStringArray(value: Prisma.JsonValue | null | undefined): string[] {
     : [];
 }
 
-const DOC_EXCERPT_LENGTH = 1200;
-const MAX_DOC_SOURCES = 4;
+// Claude's input context window is huge (100k+ tokens) — these caps exist to
+// keep only the most relevant material in the prompt, not to fit a token
+// budget. Output-side truncation (the actual failure risk) is handled
+// separately in AiService/AnthropicContentProvider.
+const DOC_EXCERPT_LENGTH = 3000;
+const MAX_DOC_SOURCES = 8;
 
 /**
  * Pick the reference documents most relevant to the transcript and turn them
