@@ -8,37 +8,45 @@ import {
   wrapUntrusted,
 } from './prompt-helpers';
 
+const VARIANT_SHAPE = `{
+  "versionName": "A" | "B" | "C",
+  "strategy": {
+    "workingTitle": string, "goal": string, "targetAudience": string,
+    "contentPillar": string, "recommendedLength": string, "recommendedStyle": string,
+    "recommendedEmotion": string, "template": string, "contentAngle": string, "angleReason": string
+  },
+  "hook": string,
+  "setup": string,
+  "mainMessage": string,
+  "keyInsight": string,
+  "cta": string,
+  "spokenScript": string, // kompletny hovoreny skript v prirodzenej slovencine
+  "productionPlan": {
+    "estimatedDurationSeconds": number,
+    "scenes": [{ "description": string, "onScreenText": string, "brollSuggestion": string, "deliveryNote": string }],
+    "pacingNotes": string, "pauses": string[], "emphasizedWords": string[]
+  },
+  "instagramAssets": {
+    "caption": string, "shortCaption": string, "thumbnailText": string, "firstComment": string,
+    "ctaText": string, "hashtags": string[], "alternativeHooks": string[], "alternativeTitles": string[]
+  },
+  "safety": {
+    "factualUncertainty": string[], "complianceRisks": string[], "recommendedDisclaimer": string,
+    "sensitiveInfoWarnings": string[], "claimsToVerify": string[], "sourceReferences": string[]
+  }
+}`;
+
 const SHAPE = `{
   "variants": [ // presne 3 varianty: A = cisty profesionalny, B = storytelling, C = najsilnejsi hook
-    {
-      "versionName": "A" | "B" | "C",
-      "strategy": {
-        "workingTitle": string, "goal": string, "targetAudience": string,
-        "contentPillar": string, "recommendedLength": string, "recommendedStyle": string,
-        "recommendedEmotion": string, "template": string, "contentAngle": string, "angleReason": string
-      },
-      "hook": string,
-      "setup": string,
-      "mainMessage": string,
-      "keyInsight": string,
-      "cta": string,
-      "spokenScript": string, // kompletny hovoreny skript v prirodzenej slovencine
-      "productionPlan": {
-        "estimatedDurationSeconds": number,
-        "scenes": [{ "description": string, "onScreenText": string, "brollSuggestion": string, "deliveryNote": string }],
-        "pacingNotes": string, "pauses": string[], "emphasizedWords": string[]
-      },
-      "instagramAssets": {
-        "caption": string, "shortCaption": string, "thumbnailText": string, "firstComment": string,
-        "ctaText": string, "hashtags": string[], "alternativeHooks": string[], "alternativeTitles": string[]
-      },
-      "safety": {
-        "factualUncertainty": string[], "complianceRisks": string[], "recommendedDisclaimer": string,
-        "sensitiveInfoWarnings": string[], "claimsToVerify": string[], "sourceReferences": string[]
-      }
-    }
+    ${VARIANT_SHAPE}
   ]
 }`;
+
+const VERSION_BRIEF: Record<'A' | 'B' | 'C', string> = {
+  A: 'A (čistý profesionálny)',
+  B: 'B (storytelling)',
+  C: 'C (najsilnejší, najodvážnejší hook — curiosity gap alebo kontroverzný uhol)',
+};
 
 export function buildScriptGenerationPrompt(input: ScriptGenerationInput): {
   system: string;
@@ -53,9 +61,15 @@ ${input.template.ctaPattern ? `CTA vzor: ${input.template.ctaPattern}` : ''}
 ${input.template.complianceRules ? `Compliance: ${input.template.complianceRules}` : ''}`
     : '';
 
+  const singleVariant = input.versionName;
+
   return {
     system: `Si špičkový scenárista krátkych vertikálnych videí pre Instagram a Facebook Reels na slovenskom trhu.
-Úloha: vygeneruj TRI kompletné varianty skriptu — A (čistý profesionálny), B (storytelling), C (najsilnejší hook).
+${
+  singleVariant
+    ? `Úloha: vygeneruj JEDEN kompletný variant skriptu — variant ${VERSION_BRIEF[singleVariant]}.`
+    : `Úloha: vygeneruj TRI kompletné varianty skriptu — A (čistý profesionálny), B (storytelling), C (najsilnejší hook).`
+}
 Výstup musí znieť ako používateľ, nie ako generická AI kópia.
 
 PLAYBOOK KRÁTKYCH VIDEÍ (IG/FB Reels) — riaď sa ním:
@@ -108,7 +122,7 @@ ${
 DÔRAZ NA JAZYK: Celý text musí byť v 100 % gramaticky a pravopisne správnej spisovnej slovenčine (diakritika, interpunkcia, skloňovanie, časovanie, zhoda podmetu s prísudkom). Pred vrátením si text po sebe prekontroluj a oprav.
 ${ANTI_INJECTION_RULES}
 ${OUTPUT_RULES}
-${jsonSchemaInstruction(SHAPE)}`,
+${jsonSchemaInstruction(singleVariant ? VARIANT_SHAPE : SHAPE)}`,
     user: [
       `Téma: ${input.topic}`,
       input.rawIdea ? wrapUntrusted('raw-idea', input.rawIdea) : '',

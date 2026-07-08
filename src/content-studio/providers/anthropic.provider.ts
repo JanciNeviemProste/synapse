@@ -21,7 +21,7 @@ import {
   contentPillarsSchema,
   extractedIdeasSchema,
   generatedContentPlanSchema,
-  generatedScriptsSchema,
+  generatedScriptVariantSchema,
   inspirationPatternsSchema,
   interviewBriefSchema,
   interviewNextQuestionSchema,
@@ -221,17 +221,24 @@ export class AnthropicContentProvider
   }
 
   async generateScripts(input: ScriptGenerationInput): Promise<GeneratedScripts> {
-    const { system, user } = buildScriptGenerationPrompt(input);
-    const generated = await this.generateValidated(
-      generatedScriptsSchema,
-      system,
-      user,
-      'generate-scripts',
-      16000,
+    // Fan out one variant per call instead of asking for all 3 at once — each
+    // response is a fraction of the size, so it stays well under the output
+    // token cap even when the knowledge context is large.
+    const letters: ('A' | 'B' | 'C')[] = ['A', 'B', 'C'];
+    const generated = await Promise.all(
+      letters.map((versionName) => {
+        const { system, user } = buildScriptGenerationPrompt({ ...input, versionName });
+        return this.generateValidated(
+          generatedScriptVariantSchema,
+          system,
+          user,
+          `generate-script-${versionName}`,
+        );
+      }),
     );
     // Always run a Slovak proofreading pass so grammar/spelling is clean.
     const variants = await Promise.all(
-      generated.variants.map((v) => this.proofreadVariant(v)),
+      generated.map((v) => this.proofreadVariant(v)),
     );
     return { variants };
   }

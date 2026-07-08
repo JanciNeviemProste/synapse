@@ -84,6 +84,8 @@ export interface ScriptGenerationInput {
   brand?: BrandContext;
   knowledge?: KnowledgeContext;
   stylePreferences?: string[];
+  /** When set, the prompt asks for only this one variant instead of all 3 — used to fan out generation across parallel calls so each stays well under the output token cap. */
+  versionName?: 'A' | 'B' | 'C';
 }
 
 export interface ScriptReviewInput {
