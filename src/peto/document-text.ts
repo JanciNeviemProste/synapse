@@ -1,6 +1,7 @@
 import * as mammoth from 'mammoth';
+import type ExcelJS from 'exceljs';
 
-export type PetoDocType = 'pdf' | 'docx' | 'txt' | 'md' | 'csv';
+export type PetoDocType = 'pdf' | 'docx' | 'txt' | 'md' | 'csv' | 'xlsx';
 
 export class UnsupportedFileError extends Error {
   constructor(hint: string) {
@@ -32,6 +33,12 @@ export function resolveDocType(mimeType: string, fileName: string): PetoDocType 
   ) {
     return 'docx';
   }
+  if (
+    mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    ext === 'xlsx'
+  ) {
+    return 'xlsx';
+  }
   if (mime === 'text/markdown' || ext === 'md' || ext === 'markdown') return 'md';
   if (mime === 'text/csv' || ext === 'csv') return 'csv';
   if (mime === 'text/plain' || ext === 'txt') return 'txt';
@@ -53,6 +60,69 @@ export interface ExtractedDocument {
   sourceType: PetoDocType;
 }
 
+const MAX_ROWS_PER_SHEET = 500;
+const MAX_COLS_PER_ROW = 40;
+
+function cellToString(value: ExcelJS.CellValue): string {
+  if (value === null || value === undefined) return '';
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (typeof value === 'object' && 'result' in value) {
+    return String((value as { result: unknown }).result ?? '');
+  }
+  if (typeof value === 'object' && 'text' in value) {
+    return String((value as { text: unknown }).text ?? '');
+  }
+  return String(value);
+}
+
+/**
+ * Convert a workbook into retrieval-friendly text: one section per sheet,
+ * header row detected from the first non-empty row, subsequent rows
+ * rendered as "Header: value | Header: value" so keyword search still
+ * matches on column semantics. Truncates huge sheets. Pure — unit tested.
+ */
+export function workbookToText(workbook: ExcelJS.Workbook): string {
+  const sections: string[] = [];
+
+  workbook.eachSheet((sheet) => {
+    if (sheet.state === 'hidden' || sheet.state === 'veryHidden') return;
+
+    const rows: string[][] = [];
+    let headers: string[] | null = null;
+
+    sheet.eachRow({ includeEmpty: false }, (row) => {
+      if (rows.length >= MAX_ROWS_PER_SHEET) return;
+      const values = (row.values as ExcelJS.CellValue[])
+        .slice(1, MAX_COLS_PER_ROW + 1)
+        .map(cellToString);
+      if (!headers) {
+        headers = values;
+        return;
+      }
+      rows.push(values);
+    });
+
+    if (!headers || rows.length === 0) return;
+
+    const headerList = headers as string[];
+    const lines = rows.map((r) =>
+      headerList
+        .map((h, i) => `${h || `col${i + 1}`}: ${r[i] ?? ''}`)
+        .filter((pair) => !pair.endsWith(': '))
+        .join(' | '),
+    );
+
+    const truncatedNote =
+      sheet.rowCount - 1 > MAX_ROWS_PER_SHEET
+        ? `\n… (skrátené, zobrazených ${MAX_ROWS_PER_SHEET} z ${sheet.rowCount - 1} riadkov)`
+        : '';
+
+    sections.push(`## List: ${sheet.name}\n${lines.join('\n')}${truncatedNote}`);
+  });
+
+  return sections.join('\n\n');
+}
+
 /**
  * Extract plain text from an uploaded document buffer.
  * Supports PDF, DOCX, and plain-text formats (txt/md/csv).
@@ -65,7 +135,7 @@ export async function extractText(
   const type = resolveDocType(mimeType, fileName);
   if (!type) {
     throw new UnsupportedFileError(
-      'Nepodporovaný typ súboru. Podporované: PDF, Word (.docx), .txt, .md, .csv.',
+      'Nepodporovaný typ súboru. Podporované: PDF, Word (.docx), Excel (.xlsx), .txt, .md, .csv.',
     );
   }
 
@@ -86,6 +156,20 @@ export async function extractText(
     text = normalizeText(result.value || '');
     if (!text) {
       throw new EmptyDocumentError('Word dokument je prázdny alebo sa nedal prečítať.');
+    }
+  } else if (type === 'xlsx') {
+    const { default: ExcelJSLib } = await import('exceljs');
+    const workbook = new ExcelJSLib.Workbook();
+    try {
+      await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
+    } catch {
+      throw new UnsupportedFileError(
+        'Excel súbor sa nedal otvoriť (je poškodený alebo chránený heslom).',
+      );
+    }
+    text = normalizeText(workbookToText(workbook));
+    if (!text) {
+      throw new EmptyDocumentError('Excel zošit je prázdny.');
     }
   } else {
     text = normalizeText(buffer.toString('utf-8'));
