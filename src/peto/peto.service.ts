@@ -324,8 +324,14 @@ export class PetoService {
       return new ServiceUnavailableException(error.message);
     }
     if (msg.includes('401')) {
+      const keyHint =
+        msg.includes('invalid x-api-key') || msg.includes('authentication_error')
+          ? 'ANTHROPIC_API_KEY'
+          : msg.includes('OpenRouter')
+            ? 'OPENROUTER_API_KEY'
+            : 'ANTHROPIC_API_KEY / OPENROUTER_API_KEY / GROQ_API_KEY (podľa nastaveného AI_PROVIDER)';
       return new ServiceUnavailableException(
-        'AI služba odmietla API kľúč (401). Skontroluj kľúč v .env (OPENROUTER_API_KEY / GROQ_API_KEY) a reštartuj.',
+        `AI služba odmietla API kľúč (401). Skontroluj kľúč ${keyHint} a reštartuj.`,
       );
     }
     if (msg.includes('429')) {

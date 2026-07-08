@@ -119,4 +119,22 @@ describe('PetoService.aiFailure (private, reached via bracket access)', () => {
     const err429 = svc['aiFailure'](new Error('429 Too Many Requests'), 'X');
     expect(err429.message).toContain('preťažená');
   });
+
+  it('points at the actual provider whose key failed, not a generic guess', () => {
+    const anthropicErr = svc['aiFailure'](
+      new Error(
+        '401 {"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}',
+      ),
+      'X',
+    );
+    expect(anthropicErr.message).toContain('ANTHROPIC_API_KEY');
+    expect(anthropicErr.message).not.toContain('OPENROUTER_API_KEY');
+
+    const openRouterErr = svc['aiFailure'](
+      new Error('OpenRouter API error 401: {"error":"invalid key"}'),
+      'X',
+    );
+    expect(openRouterErr.message).toContain('OPENROUTER_API_KEY');
+    expect(openRouterErr.message).not.toContain('ANTHROPIC_API_KEY');
+  });
 });
