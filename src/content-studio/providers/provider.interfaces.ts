@@ -1,6 +1,7 @@
 import {
   ComplianceResult,
   ContentPillarsOutput,
+  DocumentClassification,
   ExtractedIdeas,
   GeneratedContentPlan,
   GeneratedScripts,
@@ -149,6 +150,10 @@ export interface ScriptReviewProvider {
 
 export interface ComplianceProvider {
   checkContent(input: ComplianceInput): Promise<ComplianceResult>;
+}
+
+export interface DocumentClassificationProvider {
+  classifyDocument(fileName: string, textExcerpt: string): Promise<DocumentClassification>;
 }
 
 // ---- Voice (spec §8) ----

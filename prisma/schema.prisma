@@ -736,6 +736,8 @@ model PetoDoc {
   id         String   @id @default(uuid())
   title      String
   sourceType String
+  /// AI-guessed document category (e.g. "cenník", "brand manuál") — null if classification failed or hasn't run.
+  category   String?
   content    String   @db.Text
   charCount  Int      @default(0)
   createdAt  DateTime @default(now())

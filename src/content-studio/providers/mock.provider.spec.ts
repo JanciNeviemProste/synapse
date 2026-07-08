@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   complianceResultSchema,
   contentPillarsSchema,
+  documentClassificationSchema,
   extractedIdeasSchema,
   generatedContentPlanSchema,
   generatedScriptsSchema,
@@ -105,6 +106,12 @@ describe('MockContentProvider produces schema-valid outputs', () => {
       expect(p.confidence).toBeGreaterThanOrEqual(0);
       expect(p.confidence).toBeLessThanOrEqual(1);
     }
+  });
+
+  it('classifyDocument', async () => {
+    const out = await provider.classifyDocument('cennik.pdf', 'Balík A stojí 200 eur.');
+    expect(() => documentClassificationSchema.parse(out)).not.toThrow();
+    expect(out.category.length).toBeGreaterThan(0);
   });
 
   it('transcribeAudio returns timestamped segments', async () => {

@@ -240,14 +240,32 @@ export class PetoService {
       throw new BadRequestException('Súbor sa nepodarilo spracovať.');
     }
     const { text, sourceType } = extracted;
+    const category = await this.classifyDocBestEffort(fileName, text);
     return this.prisma.petoDoc.create({
       data: {
         title: fileName.slice(0, 200),
         sourceType,
+        category,
         content: text,
         charCount: text.length,
       },
     });
+  }
+
+  /** AI-guessed document category — best-effort, never blocks the upload. */
+  private async classifyDocBestEffort(
+    fileName: string,
+    text: string,
+  ): Promise<string | null> {
+    try {
+      const { category } = await this.providerFactory
+        .getDocumentClassificationProvider()
+        .classifyDocument(fileName, text.slice(0, 1500));
+      return category;
+    } catch (error) {
+      this.logger.warn(`document classification failed: ${(error as Error).message}`);
+      return null;
+    }
   }
 
   async deleteDoc(id: string): Promise<void> {

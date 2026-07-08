@@ -9,6 +9,7 @@ import {
   ComplianceProvider,
   ContentDnaProvider,
   ContentStrategyProvider,
+  DocumentClassificationProvider,
   RealtimeVoiceProvider,
   ScriptGenerationProvider,
   ScriptReviewProvider,
@@ -135,6 +136,13 @@ export class ContentProviderFactory {
 
   getContentDnaProvider(): ContentDnaProvider {
     return this.kindFor('video', 'contentStudio.videoProvider') === 'anthropic'
+      ? this.anthropicProvider
+      : this.mockProvider;
+  }
+
+  /** Reuses the "strategy" role's provider selection — same lightweight text-classification tier. */
+  getDocumentClassificationProvider(): DocumentClassificationProvider {
+    return this.kindFor('strategy', 'contentStudio.strategyProvider') === 'anthropic'
       ? this.anthropicProvider
       : this.mockProvider;
   }

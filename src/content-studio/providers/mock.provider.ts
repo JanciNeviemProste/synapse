@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   ComplianceResult,
   ContentPillarsOutput,
+  DocumentClassification,
   ExtractedIdeas,
   GeneratedContentPlan,
   GeneratedScripts,
@@ -19,6 +20,7 @@ import {
   ContentStrategyInput,
   ContentStrategyProvider,
   CreateRealtimeSessionInput,
+  DocumentClassificationProvider,
   InspirationAnalysisInput,
   RealtimeSessionToken,
   RealtimeVoiceProvider,
@@ -45,7 +47,8 @@ export class MockContentProvider
     ScriptReviewProvider,
     ComplianceProvider,
     TranscriptionProvider,
-    RealtimeVoiceProvider
+    RealtimeVoiceProvider,
+    DocumentClassificationProvider
 {
   async extractIdeas(input: ContentStrategyInput): Promise<ExtractedIdeas> {
     const topic = input.rawText.slice(0, 60) || 'tvoja téma';
@@ -190,6 +193,13 @@ export class MockContentProvider
         { category: 'pacing', pattern: '[MOCK] Strih každé 2–3 sekundy', note: '' },
       ],
     };
+  }
+
+  async classifyDocument(
+    _fileName: string,
+    _textExcerpt: string,
+  ): Promise<DocumentClassification> {
+    return { category: 'iné (mock)' };
   }
 
   async analyzeStyle(_input: StyleMemoryInput): Promise<StyleMemoryAnalysis> {

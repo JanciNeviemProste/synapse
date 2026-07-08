@@ -54,18 +54,20 @@
     <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600"><%= docs.length %> súborov</span>
   </summary>
   <div class="px-6 pb-6 border-t border-gray-100 pt-4">
-    <p class="text-xs text-gray-400 mb-3">Nahraj cenník, brand manuál, staré skripty, produktové info… Vytiahne sa z nich text a AI ho použije pri generovaní. Podporované: PDF, Word (.docx), Excel (.xlsx), .txt, .md, .csv (max 20 MB).</p>
-    <div class="flex items-center gap-2 mb-4">
-      <input type="file" id="doc-file" accept=".pdf,.docx,.xlsx,.txt,.md,.csv,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,text/markdown,text/csv" class="flex-1 text-sm text-gray-600 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 file:text-sm file:font-medium">
-      <button id="doc-upload" class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 whitespace-nowrap">Nahrať</button>
+    <p class="text-xs text-gray-400 mb-3">Nahraj cenník, brand manuál, staré skripty, produktové info… Pretiahni súbory sem, alebo klikni a vyber viac naraz. Vytiahne sa z nich text a AI sama odhadne, o aký typ dokumentu ide. Podporované: PDF, Word (.docx), Excel (.xlsx), .txt, .md, .csv (max 20 MB na súbor).</p>
+    <div id="doc-dropzone" class="mb-4 border-2 border-dashed border-gray-300 rounded-lg px-4 py-6 text-center cursor-pointer transition-colors hover:border-indigo-400 hover:bg-indigo-50/40">
+      <input type="file" id="doc-file" multiple accept=".pdf,.docx,.xlsx,.txt,.md,.csv,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,text/markdown,text/csv" class="hidden">
+      <p class="text-sm text-gray-500">📎 Pretiahni súbory sem, alebo <span class="text-indigo-600 font-medium">klikni a vyber</span></p>
     </div>
     <p id="doc-status" class="hidden text-sm mb-3"></p>
-    <% if (docs.length) { %>
-    <ul class="divide-y divide-gray-100">
+    <ul id="doc-list" class="divide-y divide-gray-100">
       <% for (const d of docs) { %>
       <li class="py-2.5 flex items-center justify-between gap-2">
         <div class="min-w-0 flex items-center gap-2">
           <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-medium uppercase shrink-0"><%= d.sourceType %></span>
+          <% if (d.category) { %>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-medium shrink-0" title="Odhad AI, over si to">AI odhad: <%= d.category %></span>
+          <% } %>
           <span class="text-sm font-medium text-gray-900 truncate"><%= d.title %></span>
           <span class="text-xs text-gray-400 shrink-0"><%= d.charCount.toLocaleString('sk-SK') %> znakov</span>
         </div>
@@ -73,9 +75,7 @@
       </li>
       <% } %>
     </ul>
-    <% } else { %>
-    <p class="text-sm text-gray-400">Zatiaľ žiadne podklady.</p>
-    <% } %>
+    <p id="doc-empty" class="text-sm text-gray-400 <%= docs.length ? 'hidden' : '' %>">Zatiaľ žiadne podklady.</p>
   </div>
 </details>
 
@@ -262,25 +262,63 @@ document.querySelectorAll('.tpl-edit-form').forEach(f => f.addEventListener('sub
   if (res.ok) location.reload(); else alert('Uloženie zlyhalo:' + ((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status)));
 }));
 
-// ---- Podklady (docs) ----
-$('doc-upload').addEventListener('click', async () => {
-  const file = $('doc-file').files[0];
+// ---- Podklady (docs) — drag&drop, viac súborov naraz, max 10 súbežne ----
+const DOC_UPLOAD_CONCURRENCY = 10;
+
+async function uploadDocsInParallel(files) {
   const status = $('doc-status');
-  if (!file) { alert('Vyber súbor.'); return; }
   status.classList.remove('hidden');
   status.className = 'text-sm mb-3 text-gray-600';
-  status.textContent = 'Spracúvam „' + file.name + '"…';
-  const form = new FormData();
-  form.append('file', file);
-  try {
-    const res = await fetch('/api/peto/docs', { method: 'POST', body: form });
-    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status));
-    location.reload();
-  } catch (err) {
-    status.className = 'text-sm mb-3 text-red-600';
-    status.textContent = 'Nahranie zlyhalo: ' + err.message;
+  let done = 0, failed = 0;
+  const report = () => {
+    status.textContent = 'Spracúvam ' + files.length + ' súborov… (' + done + ' hotových' + (failed ? ', ' + failed + ' zlyhalo' : '') + ')';
+  };
+  report();
+
+  const queue = Array.from(files);
+  const worker = async () => {
+    while (queue.length) {
+      const file = queue.shift();
+      const form = new FormData();
+      form.append('file', file);
+      try {
+        const res = await fetch('/api/peto/docs', { method: 'POST', body: form });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || ('HTTP ' + res.status));
+      } catch (err) {
+        failed++;
+        console.error('Nahranie zlyhalo (' + file.name + '): ' + err.message);
+      }
+      done++;
+      report();
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(DOC_UPLOAD_CONCURRENCY, files.length) }, worker));
+
+  if (failed) {
+    status.className = 'text-sm mb-3 text-amber-700';
+    status.textContent = failed + ' z ' + files.length + ' súborov sa nepodarilo nahrať.';
   }
+  location.reload();
+}
+
+const dropzone = $('doc-dropzone');
+dropzone.addEventListener('click', () => $('doc-file').click());
+$('doc-file').addEventListener('change', () => {
+  if ($('doc-file').files.length) uploadDocsInParallel($('doc-file').files);
 });
+['dragenter', 'dragover'].forEach(evt => dropzone.addEventListener(evt, (e) => {
+  e.preventDefault();
+  dropzone.classList.add('border-indigo-400', 'bg-indigo-50/40');
+}));
+['dragleave', 'drop'].forEach(evt => dropzone.addEventListener(evt, (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('border-indigo-400', 'bg-indigo-50/40');
+}));
+dropzone.addEventListener('drop', (e) => {
+  const files = e.dataTransfer?.files;
+  if (files && files.length) uploadDocsInParallel(files);
+});
+
 document.querySelectorAll('.doc-del').forEach(b => b.addEventListener('click', async () => {
   if (!confirm('Zmazať podklad?')) return;
   const res = await fetch('/api/peto/docs/' + b.dataset.id, { method: 'DELETE' });

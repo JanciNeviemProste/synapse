@@ -8,6 +8,7 @@ import {
 import {
   ComplianceResult,
   ContentPillarsOutput,
+  DocumentClassification,
   ExtractedIdeas,
   GeneratedContentPlan,
   GeneratedScripts,
@@ -19,6 +20,7 @@ import {
   StyleMemoryAnalysis,
   complianceResultSchema,
   contentPillarsSchema,
+  documentClassificationSchema,
   extractedIdeasSchema,
   generatedContentPlanSchema,
   generatedScriptVariantSchema,
@@ -36,6 +38,7 @@ import {
   ContentPlanInput,
   ContentStrategyInput,
   ContentStrategyProvider,
+  DocumentClassificationProvider,
   InspirationAnalysisInput,
   ScriptGenerationInput,
   ScriptGenerationProvider,
@@ -46,6 +49,7 @@ import {
   InterviewNextQuestion,
   InterviewTurn,
 } from './provider.interfaces';
+import { buildDocumentClassificationPrompt } from '../prompts/document-classification.prompt';
 import { buildIdeaExtractionPrompt } from '../prompts/voice-idea-extraction.prompt';
 import { buildContentPillarsPrompt } from '../prompts/content-pillars.prompt';
 import { buildContentPlanPrompt } from '../prompts/content-plan-generation.prompt';
@@ -116,7 +120,8 @@ export class AnthropicContentProvider
     ScriptReviewProvider,
     ComplianceProvider,
     VideoUnderstandingProvider,
-    ContentDnaProvider
+    ContentDnaProvider,
+    DocumentClassificationProvider
 {
   private readonly logger = new Logger(AnthropicContentProvider.name);
 
@@ -220,12 +225,22 @@ export class AnthropicContentProvider
     return this.generateValidated(styleMemoryAnalysisSchema, system, user, 'style-memory');
   }
 
+  classifyDocument(fileName: string, textExcerpt: string): Promise<DocumentClassification> {
+    const { system, user } = buildDocumentClassificationPrompt(fileName, textExcerpt);
+    return this.generateValidated(
+      documentClassificationSchema,
+      system,
+      user,
+      'classify-document',
+    );
+  }
+
   async generateScripts(input: ScriptGenerationInput): Promise<GeneratedScripts> {
     // Fan out one variant per call instead of asking for all 3 at once — each
     // response is a fraction of the size, so it stays well under the output
     // token cap even when the knowledge context is large.
     const letters: ('A' | 'B' | 'C')[] = ['A', 'B', 'C'];
-    const generated = await Promise.all(
+    const results = await Promise.allSettled(
       letters.map((versionName) => {
         const { system, user } = buildScriptGenerationPrompt({ ...input, versionName });
         return this.generateValidated(
@@ -236,6 +251,20 @@ export class AnthropicContentProvider
         );
       }),
     );
+    // One bad variant shouldn't sink the other two — return whatever came
+    // back successfully instead of failing the whole batch.
+    const generated = results
+      .filter((r): r is PromiseFulfilledResult<GeneratedScriptVariant> => r.status === 'fulfilled')
+      .map((r) => r.value);
+    const failed = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+    if (failed.length > 0) {
+      this.logger.warn(
+        `generate-scripts: ${failed.length}/3 variants failed (${failed.map((f) => (f.reason as Error)?.message).join('; ')})`,
+      );
+    }
+    if (generated.length === 0) {
+      throw failed[0].reason;
+    }
     // Always run a Slovak proofreading pass so grammar/spelling is clean.
     const variants = await Promise.all(
       generated.map((v) => this.proofreadVariant(v)),

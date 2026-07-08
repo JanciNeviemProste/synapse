@@ -229,6 +229,13 @@ export const inspirationPatternsSchema = z.object({
 });
 export type InspirationPatterns = z.infer<typeof inspirationPatternsSchema>;
 
+// ---- Document classification (Peto podklady drag&drop) ----
+
+export const documentClassificationSchema = z.object({
+  category: z.string().min(1),
+});
+export type DocumentClassification = z.infer<typeof documentClassificationSchema>;
+
 // ---- §23 Style memory analysis ----
 
 export const styleMemoryAnalysisSchema = z.object({
