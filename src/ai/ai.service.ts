@@ -7,7 +7,7 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 
 interface OpenRouterResponse {
-  choices?: { message?: { content?: string | null } }[];
+  choices?: { message?: { content?: string | null }; finish_reason?: string }[];
   error?: { message?: string };
 }
 
@@ -22,6 +22,16 @@ export function pickOpenRouterContent(data: OpenRouterResponse): string {
     );
   }
   return content;
+}
+
+/** Thrown when the model's response was cut off by the output token cap. */
+export class AiTruncatedOutputError extends Error {
+  constructor(public readonly stopReason: string) {
+    super(
+      'AI odpoveď bola príliš dlhá a orezaná — skús menej podkladov alebo kratší brief.',
+    );
+    this.name = 'AiTruncatedOutputError';
+  }
 }
 
 @Injectable()
@@ -105,12 +115,16 @@ export class AiService {
   async generateText(
     systemPrompt: string,
     userMessage: string,
+    maxTokens = 8192,
   ): Promise<string> {
     if (this.provider === 'openrouter') {
-      return this.callOpenRouter([
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ]);
+      return this.callOpenRouter(
+        [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage },
+        ],
+        maxTokens,
+      );
     }
     if (this.provider === 'claude-cli') {
       return this.callClaudeCli(systemPrompt, userMessage);
@@ -123,10 +137,14 @@ export class AiService {
     try {
       const response = await this.client.messages.create({
         model: this.model,
-        max_tokens: 8192,
+        max_tokens: maxTokens,
         system: systemPrompt,
         messages: [{ role: 'user', content: userMessage }],
       });
+
+      if (response.stop_reason === 'max_tokens') {
+        throw new AiTruncatedOutputError(response.stop_reason);
+      }
 
       const textBlock = response.content.find((b) => b.type === 'text');
       return textBlock?.text || '';
@@ -218,6 +236,7 @@ export class AiService {
             | { type: 'image_url'; image_url: { url: string } }
           )[];
     }[],
+    maxTokens = 8192,
   ): Promise<string> {
     const started = Date.now();
     try {
@@ -233,7 +252,7 @@ export class AiService {
           },
           body: JSON.stringify({
             model: this.openrouterModel,
-            max_tokens: 8192,
+            max_tokens: maxTokens,
             messages,
           }),
         },
@@ -249,6 +268,9 @@ export class AiService {
       const data = (await response.json()) as Parameters<
         typeof pickOpenRouterContent
       >[0];
+      if (data.choices?.[0]?.finish_reason === 'length') {
+        throw new AiTruncatedOutputError('length');
+      }
       const content = pickOpenRouterContent(data);
       this.logger.debug(
         `OpenRouter ok model=${this.openrouterModel} latencyMs=${Date.now() - started}`,

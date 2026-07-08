@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PetoScript } from '@prisma/client';
 import { PetoService, selectRelevantDocs } from './peto.service';
+import { AiTruncatedOutputError } from '../ai/ai.service';
 
 /**
  * Pure-logic tests. Batch grouping and starter templates don't touch the
@@ -94,5 +95,28 @@ describe('selectRelevantDocs — reference documents → KnowledgeContext', () =
 
   it('returns no sources when there are no docs', () => {
     expect(selectRelevantDocs([], 'čokoľvek').sources).toEqual([]);
+  });
+});
+
+describe('PetoService.aiFailure (private, reached via bracket access)', () => {
+  it('does not duplicate the prefix in the client-facing message', () => {
+    const err = svc['aiFailure'](new Error('boom'), 'Generovanie zlyhalo');
+    expect(err.message).toBe('boom');
+    expect(err.message).not.toContain('Generovanie zlyhalo');
+  });
+
+  it('passes through the truncation message verbatim', () => {
+    const truncated = new AiTruncatedOutputError('max_tokens');
+    const err = svc['aiFailure'](truncated, 'Generovanie zlyhalo');
+    expect(err.message).toBe(truncated.message);
+  });
+
+  it('gives a clear hint for 401/429 without duplicating the prefix', () => {
+    const err401 = svc['aiFailure'](new Error('401 Unauthorized'), 'X');
+    expect(err401.message).toContain('API kľúč');
+    expect(err401.message).not.toContain('X:');
+
+    const err429 = svc['aiFailure'](new Error('429 Too Many Requests'), 'X');
+    expect(err429.message).toContain('preťažená');
   });
 });

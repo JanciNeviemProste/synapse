@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pickOpenRouterContent } from './ai.service';
+import { AiTruncatedOutputError, pickOpenRouterContent } from './ai.service';
 
 describe('pickOpenRouterContent', () => {
   it('returns the assistant message content', () => {
@@ -24,5 +24,14 @@ describe('pickOpenRouterContent', () => {
     expect(() =>
       pickOpenRouterContent({ error: { message: 'insufficient credits' } }),
     ).toThrow('insufficient credits');
+  });
+});
+
+describe('AiTruncatedOutputError', () => {
+  it('carries the stop reason and a clear Slovak message', () => {
+    const err = new AiTruncatedOutputError('max_tokens');
+    expect(err.stopReason).toBe('max_tokens');
+    expect(err.message).toContain('orezaná');
+    expect(err.name).toBe('AiTruncatedOutputError');
   });
 });

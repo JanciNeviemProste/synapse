@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { z } from 'zod';
-import { AiService } from '../../ai/ai.service';
+import { AiService, AiTruncatedOutputError } from '../../ai/ai.service';
 import {
   AiOutputValidationError,
   parseAiJson,
@@ -127,10 +127,11 @@ export class AnthropicContentProvider
     system: string,
     user: string,
     workflow: string,
+    maxTokens = 8192,
   ): Promise<T> {
     const started = Date.now();
     try {
-      const raw = await this.aiService.generateText(system, user);
+      const raw = await this.aiService.generateText(system, user, maxTokens);
       try {
         const result = parseAiJson(schema, raw);
         this.logger.log(
@@ -138,6 +139,7 @@ export class AnthropicContentProvider
         );
         return result;
       } catch (error) {
+        if (error instanceof AiTruncatedOutputError) throw error;
         if (!(error instanceof AiOutputValidationError)) throw error;
         this.logger.warn(
           `workflow=${workflow} output invalid (${error.issues.join('; ')}), retrying once`,
@@ -145,6 +147,7 @@ export class AnthropicContentProvider
         const retryRaw = await this.aiService.generateText(
           system,
           `${user}\n\nPredchádzajúci pokus nebol validný JSON podľa schémy (${error.issues.join('; ')}). Vráť POUZE validný JSON presne podľa schémy.`,
+          maxTokens,
         );
         const result = parseAiJson(schema, retryRaw);
         this.logger.log(
@@ -224,6 +227,7 @@ export class AnthropicContentProvider
       system,
       user,
       'generate-scripts',
+      16000,
     );
     // Always run a Slovak proofreading pass so grammar/spelling is clean.
     const variants = await Promise.all(

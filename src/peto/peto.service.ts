@@ -17,6 +17,7 @@ import {
   KnowledgeContext,
 } from '../content-studio/providers/provider.interfaces';
 import { ContentProviderFactory } from '../content-studio/providers/provider.factory';
+import { AiTruncatedOutputError } from '../ai/ai.service';
 import {
   EmptyDocumentError,
   extractText,
@@ -262,17 +263,18 @@ export class PetoService {
   private aiFailure(error: unknown, prefix: string): ServiceUnavailableException {
     const msg = (error as Error).message || 'neznáma chyba';
     this.logger.error(`${prefix}: ${msg}`);
+    if (error instanceof AiTruncatedOutputError) {
+      return new ServiceUnavailableException(error.message);
+    }
     if (msg.includes('401')) {
       return new ServiceUnavailableException(
-        `${prefix}: AI služba odmietla API kľúč (401). Skontroluj kľúč v .env (OPENROUTER_API_KEY / GROQ_API_KEY) a reštartuj.`,
+        'AI služba odmietla API kľúč (401). Skontroluj kľúč v .env (OPENROUTER_API_KEY / GROQ_API_KEY) a reštartuj.',
       );
     }
     if (msg.includes('429')) {
-      return new ServiceUnavailableException(
-        `${prefix}: AI služba je preťažená (429). Skús o chvíľu.`,
-      );
+      return new ServiceUnavailableException('AI služba je preťažená (429). Skús o chvíľu.');
     }
-    return new ServiceUnavailableException(`${prefix}: ${msg}`);
+    return new ServiceUnavailableException(msg);
   }
 
   /** True when text generation would run on the mock provider (no AI key). */
